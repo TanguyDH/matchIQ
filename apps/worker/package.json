@@ -1,0 +1,17 @@
+{
+  "name": "@matchiq/worker",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "start:dev": "tsx watch src/main.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@matchiq/rule-engine": "*",
+    "@matchiq/shared-types": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0"
+  }
+}
