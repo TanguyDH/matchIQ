@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
 
 import { AuthGuard } from '../auth/auth.guard';
 import { UserId } from '../auth/user-id.decorator';
@@ -34,5 +34,11 @@ export class StrategiesController {
     @Body(new ZodValidationPipe(PatchStrategySchema)) dto: PatchStrategyDto,
   ) {
     return this.service.update(userId, id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(@UserId() userId: string, @Param('id') id: string) {
+    return this.service.delete(userId, id);
   }
 }

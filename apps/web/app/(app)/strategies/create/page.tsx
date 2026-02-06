@@ -35,7 +35,7 @@ export default function CreateStrategyPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto">
+    <div>
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-200 text-sm">

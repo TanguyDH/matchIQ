@@ -57,4 +57,16 @@ export class StrategiesService {
       StrategiesService.name,
     );
   }
+
+  async delete(userId: string, id: string) {
+    // Ownership gate — throws 404 if the strategy doesn't belong to this user.
+    await this.findOne(userId, id);
+
+    const { error } = await this.supabase.client.from('strategies').delete().eq('id', id).eq('user_id', userId);
+
+    if (error) {
+      this.logger.error(error.message);
+      throw new InternalServerErrorException();
+    }
+  }
 }

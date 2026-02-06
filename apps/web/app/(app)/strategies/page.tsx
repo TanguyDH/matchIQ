@@ -2,21 +2,23 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Strategy } from '@matchiq/shared-types';
+import { Strategy, Rule, COMPARATOR_LABELS, TEAM_SCOPES, metricLabel } from '@matchiq/shared-types';
 import { api } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
 import Toggle from '@/components/Toggle';
 
 // ─── Actions dropdown ────────────────────────────────────────────────────────
 
-function ActionsMenu({ strategy, onDuplicate }: { strategy: Strategy; onDuplicate: () => void }) {
+function ActionsMenu({ strategy, onDelete }: { strategy: Strategy; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
-  const router = useRouter();
 
   return (
     <div className="relative">
       <button
-        onClick={() => setOpen((s) => !s)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((s) => !s);
+        }}
         className="px-1.5 py-0.5 text-gray-400 hover:text-gray-200 rounded text-lg leading-none"
       >
         ⋮
@@ -28,26 +30,10 @@ function ActionsMenu({ strategy, onDuplicate }: { strategy: Strategy; onDuplicat
           <div className="absolute right-0 top-6 z-20 w-36 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-0.5">
             <button
               onClick={() => {
-                router.push(`/strategies/${strategy.id}`);
+                onDelete();
                 setOpen(false);
               }}
-              className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => {
-                onDuplicate();
-                setOpen(false);
-              }}
-              className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700"
-            >
-              Duplicate
-            </button>
-            <div className="border-t border-gray-700 my-0.5" />
-            <button
-              disabled
-              className="w-full text-left px-3 py-1.5 text-xs text-red-400 opacity-40 cursor-not-allowed"
+              className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-gray-700"
             >
               Delete
             </button>
@@ -55,6 +41,173 @@ function ActionsMenu({ strategy, onDuplicate }: { strategy: Strategy; onDuplicat
         </>
       )}
     </div>
+  );
+}
+
+// ─── Format rule display ──────────────────────────────────────────────────────
+
+function formatRule(rule: Rule): string {
+  const metric = metricLabel(rule.metric);
+  const comparator = COMPARATOR_LABELS[rule.comparator];
+  const teamScope = rule.team_scope
+    ? TEAM_SCOPES.find((t) => t.value === rule.team_scope)?.label
+    : null;
+
+  if (teamScope) {
+    return `${metric} (${teamScope}) ${comparator} ${rule.value}`;
+  }
+  return `${metric} ${comparator} ${rule.value}`;
+}
+
+// ─── Expandable strategy row ──────────────────────────────────────────────────
+
+function StrategyRow({ strategy, onToggle, onDelete }: {
+  strategy: Strategy;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  const { token } = useAuth();
+  const router = useRouter();
+  const [expanded, setExpanded] = useState(false);
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [loadingRules, setLoadingRules] = useState(false);
+
+  const fetchRules = async () => {
+    if (rules.length > 0) return; // Already loaded
+    setLoadingRules(true);
+    try {
+      const data = await api.getRules(token, strategy.id);
+      setRules(data);
+    } catch (e) {
+      console.error('Failed to load rules:', e);
+    } finally {
+      setLoadingRules(false);
+    }
+  };
+
+  const handleExpand = () => {
+    if (!expanded) fetchRules();
+    setExpanded(!expanded);
+  };
+
+  const handleDeleteRule = async (ruleId: string) => {
+    try {
+      await api.deleteRule(token, ruleId);
+      setRules((prev) => prev.filter((r) => r.id !== ruleId));
+    } catch (e) {
+      console.error('Failed to delete rule:', e);
+    }
+  };
+
+  return (
+    <>
+      <tr
+        className="border-b border-gray-900 hover:bg-gray-900/40 transition-colors cursor-pointer"
+        onClick={handleExpand}
+      >
+        <td className="py-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleExpand();
+              }}
+              className="text-gray-400 hover:text-gray-200 transition-transform"
+              style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            >
+              ▼
+            </button>
+            <div>
+              <p className="text-sm font-medium text-gray-100">{strategy.name}</p>
+              <p className="text-xs text-gray-500">{strategy.desired_outcome ?? '—'}</p>
+            </div>
+          </div>
+        </td>
+        <td onClick={(e) => e.stopPropagation()}>
+          <span className="text-sm text-gray-300">0</span>
+        </td>
+        <td onClick={(e) => e.stopPropagation()}>
+          <span className="text-sm text-gray-300">0%</span>
+        </td>
+        <td onClick={(e) => e.stopPropagation()}>
+          <Toggle on={strategy.is_active} onToggle={onToggle} />
+        </td>
+        <td onClick={(e) => e.stopPropagation()}>
+          <ActionsMenu strategy={strategy} onDelete={onDelete} />
+        </td>
+      </tr>
+
+      {/* Expanded rules section */}
+      {expanded && (
+        <tr>
+          <td colSpan={5} className="bg-gray-950/50 px-4 py-4">
+            <div className="ml-8">
+              <p className="text-xs text-gray-400 mb-3">Alert me of live matches where:</p>
+
+              {loadingRules && (
+                <p className="text-xs text-gray-500">Loading rules...</p>
+              )}
+
+              {!loadingRules && rules.length === 0 && (
+                <p className="text-xs text-gray-500 mb-3">No rules yet</p>
+              )}
+
+              {!loadingRules && rules.map((rule, idx) => (
+                <div key={rule.id}>
+                  <div className="flex items-center justify-between py-2">
+                    <p className="text-sm text-gray-200">{formatRule(rule)}</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
+                        className="text-gray-400 hover:text-emerald-500 transition-colors"
+                        title="Edit"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRule(rule.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                        title="Delete"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  {idx < rules.length - 1 && (
+                    <p className="text-xs text-gray-600 py-1">and</p>
+                  )}
+                </div>
+              ))}
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  + Add Rule
+                </button>
+                <button
+                  disabled
+                  className="bg-gray-800 text-gray-500 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50"
+                >
+                  ⏱ History
+                </button>
+                <button
+                  disabled
+                  className="bg-gray-800 text-gray-500 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50"
+                >
+                  🏆 Leagues: Default
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -96,16 +249,12 @@ export default function StrategiesPage() {
     }
   };
 
-  const handleDuplicate = async (strategy: Strategy) => {
+  const handleDelete = async (strategy: Strategy) => {
+    if (!confirm(`Are you sure you want to delete "${strategy.name}"?`)) return;
+
     try {
-      await api.createStrategy(token, {
-        name: `${strategy.name} (copy)`,
-        description: strategy.description ?? undefined,
-        mode: strategy.mode,
-        alert_type: strategy.alert_type,
-        desired_outcome: strategy.desired_outcome ?? undefined,
-      });
-      fetchAll();
+      await api.deleteStrategy(token, strategy.id);
+      setStrategies((prev) => prev.filter((s) => s.id !== strategy.id));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -170,27 +319,12 @@ export default function StrategiesPage() {
             </thead>
             <tbody>
               {strategies.map((s) => (
-                <tr
+                <StrategyRow
                   key={s.id}
-                  className="border-b border-gray-900 hover:bg-gray-900/40 transition-colors"
-                >
-                  <td className="py-2">
-                    <p className="text-sm font-medium text-gray-100">{s.name}</p>
-                    <p className="text-xs text-gray-500">{s.desired_outcome ?? '—'}</p>
-                  </td>
-                  <td>
-                    <span className="text-sm text-gray-300">0</span>
-                  </td>
-                  <td>
-                    <span className="text-sm text-gray-300">0%</span>
-                  </td>
-                  <td>
-                    <Toggle on={s.is_active} onToggle={() => handleToggle(s)} />
-                  </td>
-                  <td>
-                    <ActionsMenu strategy={s} onDuplicate={() => handleDuplicate(s)} />
-                  </td>
-                </tr>
+                  strategy={s}
+                  onToggle={() => handleToggle(s)}
+                  onDelete={() => handleDelete(s)}
+                />
               ))}
             </tbody>
           </table>
@@ -207,7 +341,7 @@ export default function StrategiesPage() {
                   <p className="text-sm font-medium">{s.name}</p>
                   <p className="text-xs text-gray-500">{s.desired_outcome ?? '—'}</p>
                 </div>
-                <ActionsMenu strategy={s} onDuplicate={() => handleDuplicate(s)} />
+                <ActionsMenu strategy={s} onDelete={() => handleDelete(s)} />
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
                 <div className="flex gap-4">

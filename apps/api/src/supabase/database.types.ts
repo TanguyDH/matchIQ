@@ -10,11 +10,17 @@ export type TeamScope     =
   | 'HOME'
   | 'AWAY'
   | 'TOTAL'
+  | 'EITHER_TEAM'
+  | 'EITHER_OPPONENT'
+  | 'DIFFERENCE'
   | 'FAVOURITE'
+  | 'FAVOURITE_HOME'
+  | 'FAVOURITE_AWAY'
   | 'UNDERDOG'
+  | 'UNDERDOG_HOME'
+  | 'UNDERDOG_AWAY'
   | 'WINNING_TEAM'
-  | 'LOSING_TEAM'
-  | 'DIFFERENCE';
+  | 'LOSING_TEAM';
 export type TriggerResult = 'HIT' | 'MISS';
 
 // ─── Database schema ─────────────────────────────────────────────────────────

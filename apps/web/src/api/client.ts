@@ -33,6 +33,9 @@ export const api = {
   patchStrategy: (token: string | null, id: string, body: PatchStrategyPayload) =>
     request<Strategy>(`/strategies/${id}`, token, { method: 'PATCH', body: JSON.stringify(body) }),
 
+  deleteStrategy: (token: string | null, id: string) =>
+    request<void>(`/strategies/${id}`, token, { method: 'DELETE' }),
+
   getRules: (token: string | null, strategyId: string) =>
     request<Rule[]>(`/strategies/${strategyId}/rules`, token),
 

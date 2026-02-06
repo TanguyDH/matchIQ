@@ -6,7 +6,22 @@ export const CreateRuleSchema = z.object({
   comparator: z.enum(['GTE', 'LTE', 'EQ', 'GT', 'LT', 'NEQ']),
   value: z.number().finite(),
   team_scope: z
-    .enum(['HOME', 'AWAY', 'TOTAL', 'FAVOURITE', 'UNDERDOG', 'WINNING_TEAM', 'LOSING_TEAM', 'DIFFERENCE'])
+    .enum([
+      'HOME',
+      'AWAY',
+      'TOTAL',
+      'EITHER_TEAM',
+      'EITHER_OPPONENT',
+      'DIFFERENCE',
+      'FAVOURITE',
+      'FAVOURITE_HOME',
+      'FAVOURITE_AWAY',
+      'UNDERDOG',
+      'UNDERDOG_HOME',
+      'UNDERDOG_AWAY',
+      'WINNING_TEAM',
+      'LOSING_TEAM',
+    ])
     .optional(),
   // ADVANCED-mode only; internal shape defined in Phase 4 (rule-engine).
   time_filter: z.record(z.string(), z.unknown()).optional(),
