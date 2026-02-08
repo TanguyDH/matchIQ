@@ -64,6 +64,40 @@ export interface Performance {
   hit_rate: string; // numeric(5,2) serialised as string
 }
 
+// ─── Rule Engine Types ────────────────────────────────────────────────────────
+
+export interface StrategyWithRules extends Strategy {
+  rules: Rule[];
+}
+
+export interface MatchSnapshot {
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  minute: number;
+  isLive: boolean;
+  // In-play stats
+  inPlay: Record<string, number>; // key = metric name (e.g., 'home_goals'), value = metric value
+  // Pre-match stats
+  preMatch: Record<string, number>;
+  // Odds
+  odds: Record<string, number>;
+}
+
+export interface EvaluationResult {
+  passed: boolean;
+  failedRuleId?: string;
+  matchedRules: Array<{
+    ruleId: string;
+    metric: string;
+    comparator: string;
+    target: number;
+    actual: number;
+  }>;
+}
+
 // ─── API payloads ─────────────────────────────────────────────────────────────
 
 export interface CreateStrategyPayload {
