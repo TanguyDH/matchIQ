@@ -14,6 +14,7 @@ console.log('');
 /**
  * Main entry point.
  * Starts BullMQ workers and periodic scan ticker.
+ * If SNAPSHOT_MODE=true, runs once and exits.
  */
 async function start(): Promise<void> {
   try {
@@ -21,14 +22,23 @@ async function start(): Promise<void> {
     await redis.ping();
     console.log('[Worker] Redis connection verified');
 
-    // Start the periodic scan ticker
-    await startScanTicker();
+    if (config.snapshotMode) {
+      // SNAPSHOT MODE: Run once and exit
+      console.log('[Worker] SNAPSHOT MODE: Running single scan...');
+      const { scanMatches } = await import('./scanner');
+      await scanMatches();
+      console.log('[Worker] Snapshot complete. Exiting...');
+      await shutdown();
+    } else {
+      // CONTINUOUS MODE: Start periodic scanning
+      await startScanTicker();
 
-    console.log('');
-    console.log('[Worker] All systems operational');
-    console.log('[Worker] Workers are processing jobs in the background');
-    console.log('[Worker] Press Ctrl+C to stop');
-    console.log('');
+      console.log('');
+      console.log('[Worker] All systems operational');
+      console.log('[Worker] Workers are processing jobs in the background');
+      console.log('[Worker] Press Ctrl+C to stop');
+      console.log('');
+    }
   } catch (error) {
     console.error('[Worker] Failed to start:', error);
     process.exit(1);

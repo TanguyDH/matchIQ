@@ -9,6 +9,7 @@ import type {
   StrategyWithRules,
   TeamScope,
 } from '@matchiq/shared-types';
+import { extractInPlayMetric } from './metrics-logic';
 
 /**
  * Evaluates a strategy against a match snapshot.
@@ -73,13 +74,15 @@ export function evaluateStrategy(
  * @returns The extracted value, or null if not found
  */
 function extractMetricValue(rule: Rule, match: MatchSnapshot): number | null {
+  // Use dedicated logic for IN_PLAY metrics
+  if (rule.value_type === 'IN_PLAY') {
+    return extractInPlayMetric(rule, match);
+  }
+
+  // Fallback for PRE_MATCH and ODDS (generic extraction)
   let dataSource: Record<string, number>;
 
-  // Select the correct data source based on value_type
   switch (rule.value_type) {
-    case 'IN_PLAY':
-      dataSource = match.inPlay;
-      break;
     case 'PRE_MATCH':
       dataSource = match.preMatch;
       break;

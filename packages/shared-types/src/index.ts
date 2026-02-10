@@ -54,6 +54,29 @@ export interface Trigger {
   match_id: string;
   triggered_at: string;
   result: TriggerResult | null;
+  minute: number | null;
+  home_team: string | null;
+  away_team: string | null;
+  score_home: number | null;
+  score_away: number | null;
+  league_id: number | null;
+  fixture_timestamp: string | null;
+  evidence_json: TriggerEvidence;
+}
+
+export interface TriggerEvidence {
+  strategyId: string;
+  fixtureId: string;
+  matchedRules: Array<{
+    ruleId: string;
+    metric: string;
+    comparator: string;
+    target: number;
+    actual: number;
+  }>;
+  odds?: Record<string, number>;
+  stats?: Record<string, number>;
+  capturedAt: string;
 }
 
 export interface Performance {

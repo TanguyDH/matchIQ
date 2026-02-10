@@ -4,52 +4,102 @@ import type {
   MatchSnapshot,
   Strategy,
   Rule,
+  RuleValueType,
 } from '@matchiq/shared-types';
 import { supabase } from './supabase';
-import { getLiveMatches } from './mock-provider';
+import { ProviderService } from './provider-service';
 import { createTrigger } from './trigger-service';
 import { incrementTriggerCount } from './performance-service';
 import { isDuplicateTrigger, markTriggerProcessed } from './redis';
 import { sendAlertQueue } from './queues';
+import {
+  analyzeDataRequirements,
+  logDataRequirements,
+  estimateApiCalls,
+} from './data-requirements-analyzer';
+import { config } from './config';
+
+const providerService = new ProviderService();
 
 /**
  * Main scanning logic.
- * Polls live matches, loads active strategies, evaluates rules, and triggers alerts.
+ * Analyzes data requirements, fetches live fixtures, and processes candidates.
  */
 export async function scanMatches(): Promise<void> {
   console.log('[Scanner] Starting scan cycle...');
 
   try {
-    // 1. Fetch live matches
-    const matches = getLiveMatches();
-    if (matches.length === 0) {
-      console.log('[Scanner] No live matches found');
-      return;
-    }
-
-    // 2. Load all active IN_PLAY strategies
-    // TODO: Filter by alert_type when PRE_MATCH is implemented
+    // 1. Load all active IN_PLAY strategies
     const strategies = await loadActiveStrategies();
     if (strategies.length === 0) {
       console.log('[Scanner] No active strategies found');
       return;
     }
 
+    // 2. Analyze data requirements BEFORE fetching
+    const requirements = analyzeDataRequirements(strategies);
+    logDataRequirements(requirements);
+
+    // 3. Fetch live fixtures from API-Football
+    const allFixtures = await providerService.fetchLiveFixtures();
+    if (allFixtures.length === 0) {
+      console.log('[Scanner] No live matches found');
+      return;
+    }
+
+    // 4. Limit fixtures to process (respects rate limits)
+    const fixtureLimit = config.fixtureLimit;
+    const fixtures = allFixtures.slice(0, fixtureLimit);
+
     console.log(
-      `[Scanner] Evaluating ${strategies.length} strategies against ${matches.length} matches`,
+      `[Scanner] Found ${allFixtures.length} live fixtures, processing ${fixtures.length} (limit: ${fixtureLimit})`,
+    );
+    console.log(
+      `[Scanner] Evaluating ${strategies.length} strategies`,
     );
 
-    // 3. Evaluate each strategy against each match
+    // 5. Estimate API calls
+    const estimatedCalls = estimateApiCalls(fixtures.length, requirements);
+    console.log(`[Scanner] Estimated API calls: ${estimatedCalls}`);
+
+    // 6. Process each fixture
     let triggersCreated = 0;
-    for (const strategy of strategies) {
-      for (const match of matches) {
-        await evaluateAndTrigger(strategy, match, () => {
-          triggersCreated++;
-        });
+    for (const fixture of fixtures) {
+      try {
+        // SportMonks includes statistics in the fixture response by default
+        // No need to fetch separately if we use proper includes in the API call
+
+        // Normalize to MatchSnapshot (SportMonks structure)
+        const match = providerService.normalizeToMatchSnapshot(fixture);
+
+        // DEBUG: Log match data
+        console.log(
+          `[Scanner] Match ${fixture.id}: ${match.homeTeam} ${match.homeScore}-${match.awayScore} ${match.awayTeam}`,
+        );
+        console.log(`[Scanner] inPlay data keys:`, Object.keys(match.inPlay));
+        console.log(`[Scanner] home_goals:`, match.inPlay.home_goals);
+        console.log(`[Scanner] attacks (home/away):`, match.inPlay.home_attacks, '/', match.inPlay.away_attacks);
+        console.log(`[Scanner] dangerous_attacks (home/away):`, match.inPlay.home_dangerous_attacks, '/', match.inPlay.away_dangerous_attacks);
+
+        // Evaluate against all strategies
+        for (const strategy of strategies) {
+          await evaluateAndTrigger(strategy, match, () => {
+            triggersCreated++;
+          });
+        }
+      } catch (error) {
+        console.error(
+          `[Scanner] Failed to process fixture ${fixture.id}:`,
+          error,
+        );
+        // Continue with next fixture
       }
     }
 
     console.log(`[Scanner] Scan complete. Triggers created: ${triggersCreated}`);
+    console.log(
+      `[Scanner] Skipped ${allFixtures.length - fixtures.length} fixtures due to limit`,
+    );
   } catch (error) {
     console.error('[Scanner] Scan failed:', error);
     // Don't throw - let the next cycle try again
@@ -124,6 +174,10 @@ async function evaluateAndTrigger(
     // Evaluate using rule engine
     const result = evaluateStrategy(strategy, match);
 
+    console.log(
+      `[Scanner] Strategy "${strategy.name}" evaluation: passed=${result.passed}, failedRuleId=${result.failedRuleId}`,
+    );
+
     if (!result.passed) {
       return; // Strategy didn't match
     }
@@ -132,8 +186,8 @@ async function evaluateAndTrigger(
       `[Scanner] ✓ Strategy "${strategy.name}" matched for match ${match.id}`,
     );
 
-    // Create trigger (DB constraint as final gate)
-    const triggerId = await createTrigger(strategy.id, match.id);
+    // Create trigger with evidence (DB constraint as final gate)
+    const triggerId = await createTrigger(strategy.id, match, result);
     if (!triggerId) {
       // Duplicate trigger - DB constraint caught it
       // Mark in Redis to prevent future checks
