@@ -9,7 +9,7 @@ import Toggle from '@/components/Toggle';
 
 // ─── Actions dropdown ────────────────────────────────────────────────────────
 
-function ActionsMenu({ strategy, onDelete }: { strategy: Strategy; onDelete: () => void }) {
+function ActionsMenu({ onDelete, onRename }: { onDelete: () => void; onRename: () => void }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -19,7 +19,7 @@ function ActionsMenu({ strategy, onDelete }: { strategy: Strategy; onDelete: () 
           e.stopPropagation();
           setOpen((s) => !s);
         }}
-        className="px-1.5 py-0.5 text-gray-400 hover:text-gray-200 rounded text-lg leading-none"
+        className="px-1.5 py-0.5 text-[#475569] hover:text-[#f1f5f9] rounded text-lg leading-none transition-colors"
       >
         ⋮
       </button>
@@ -27,15 +27,26 @@ function ActionsMenu({ strategy, onDelete }: { strategy: Strategy; onDelete: () 
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-6 z-20 w-36 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-0.5">
+          <div className="absolute right-0 top-6 z-20 w-36 bg-[#1e293b] border border-[#334155] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-0.5">
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
+                onRename();
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-1.5 text-xs text-[#94a3b8] hover:bg-[#334155] transition-colors"
+            >
+              Renommer
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
                 onDelete();
                 setOpen(false);
               }}
-              className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-gray-700"
+              className="w-full text-left px-3 py-1.5 text-xs text-[#f87171] hover:bg-[#334155] transition-colors"
             >
-              Delete
+              Supprimer
             </button>
           </div>
         </>
@@ -59,21 +70,110 @@ function formatRule(rule: Rule): string {
   return `${metric} ${comparator} ${rule.value}`;
 }
 
-// ─── Expandable strategy row ──────────────────────────────────────────────────
+// ─── Mobile strategy card ─────────────────────────────────────────────────────
 
-function StrategyRow({ strategy, onToggle, onDelete }: {
+function StrategyCard({
+  strategy,
+  onToggle,
+  onDelete,
+  onRename,
+}: {
   strategy: Strategy;
   onToggle: () => void;
   onDelete: () => void;
+  onRename: (newName: string) => Promise<void>;
+}) {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(strategy.name);
+
+  const handleSaveName = async () => {
+    if (editedName.trim() === '' || editedName === strategy.name) {
+      setEditedName(strategy.name);
+      setIsEditingName(false);
+      return;
+    }
+    try {
+      await onRename(editedName.trim());
+      setIsEditingName(false);
+    } catch {
+      setEditedName(strategy.name);
+      setIsEditingName(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSaveName();
+    else if (e.key === 'Escape') {
+      setEditedName(strategy.name);
+      setIsEditingName(false);
+    }
+  };
+
+  return (
+    <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-4">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          {isEditingName ? (
+            <input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onBlur={handleSaveName}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              className="text-sm font-medium bg-[#0f172a] text-[#f1f5f9] border border-[#10b981] rounded px-2 py-1 focus:outline-none w-full"
+            />
+          ) : (
+            <p
+              className="text-sm font-medium text-[#f1f5f9] hover:text-[#10b981] cursor-text transition-colors"
+              onClick={() => setIsEditingName(true)}
+              title="Cliquer pour modifier"
+            >
+              {strategy.name}
+            </p>
+          )}
+          <p className="text-xs text-[#475569] mt-0.5">{strategy.desired_outcome ?? '—'}</p>
+        </div>
+        <ActionsMenu onDelete={onDelete} onRename={() => setIsEditingName(true)} />
+      </div>
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#334155]">
+        <div className="flex gap-4">
+          <span className="text-xs text-[#475569] font-mono">
+            Picks <span className="text-[#94a3b8]">0</span>
+          </span>
+          <span className="text-xs text-[#475569] font-mono">
+            Hit% <span className="text-[#94a3b8]">0%</span>
+          </span>
+        </div>
+        <Toggle on={strategy.is_active} onToggle={onToggle} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Expandable strategy row ──────────────────────────────────────────────────
+
+function StrategyRow({
+  strategy,
+  onToggle,
+  onDelete,
+  onRename,
+}: {
+  strategy: Strategy;
+  onToggle: () => void;
+  onDelete: () => void;
+  onRename: (newName: string) => Promise<void>;
 }) {
   const { token } = useAuth();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loadingRules, setLoadingRules] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(strategy.name);
 
   const fetchRules = async () => {
-    if (rules.length > 0) return; // Already loaded
+    if (rules.length > 0) return;
     setLoadingRules(true);
     try {
       const data = await api.getRules(token, strategy.id);
@@ -99,10 +199,33 @@ function StrategyRow({ strategy, onToggle, onDelete }: {
     }
   };
 
+  const handleSaveName = async () => {
+    if (editedName.trim() === '' || editedName === strategy.name) {
+      setEditedName(strategy.name);
+      setIsEditingName(false);
+      return;
+    }
+    try {
+      await onRename(editedName.trim());
+      setIsEditingName(false);
+    } catch {
+      setEditedName(strategy.name);
+      setIsEditingName(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSaveName();
+    else if (e.key === 'Escape') {
+      setEditedName(strategy.name);
+      setIsEditingName(false);
+    }
+  };
+
   return (
     <>
       <tr
-        className="border-b border-gray-900 hover:bg-gray-900/40 transition-colors cursor-pointer"
+        className="border-b border-[#334155] hover:bg-[#1e293b]/60 transition-colors cursor-pointer"
         onClick={handleExpand}
       >
         <td className="py-3">
@@ -112,95 +235,139 @@ function StrategyRow({ strategy, onToggle, onDelete }: {
                 e.stopPropagation();
                 handleExpand();
               }}
-              className="text-gray-400 hover:text-gray-200 transition-transform"
+              className="text-[#475569] hover:text-[#f1f5f9] transition-all"
               style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
             >
               ▼
             </button>
             <div>
-              <p className="text-sm font-medium text-gray-100">{strategy.name}</p>
-              <p className="text-xs text-gray-500">{strategy.desired_outcome ?? '—'}</p>
+              {isEditingName ? (
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onBlur={handleSaveName}
+                  onKeyDown={handleKeyDown}
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus
+                  className="text-sm font-medium bg-[#0f172a] text-[#f1f5f9] border border-[#10b981] rounded px-2 py-1 focus:outline-none"
+                />
+              ) : (
+                <p
+                  className="text-sm font-medium text-[#f1f5f9] hover:text-[#10b981] cursor-text transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditingName(true);
+                  }}
+                  title="Cliquer pour modifier"
+                >
+                  {strategy.name}
+                </p>
+              )}
+              <p className="text-xs text-[#475569]">{strategy.desired_outcome ?? '—'}</p>
             </div>
           </div>
         </td>
         <td onClick={(e) => e.stopPropagation()}>
-          <span className="text-sm text-gray-300">0</span>
+          <span className="text-sm font-mono text-[#94a3b8]">0</span>
         </td>
         <td onClick={(e) => e.stopPropagation()}>
-          <span className="text-sm text-gray-300">0%</span>
+          <span className="text-sm font-mono text-[#94a3b8]">0%</span>
         </td>
         <td onClick={(e) => e.stopPropagation()}>
           <Toggle on={strategy.is_active} onToggle={onToggle} />
         </td>
         <td onClick={(e) => e.stopPropagation()}>
-          <ActionsMenu strategy={strategy} onDelete={onDelete} />
+          <ActionsMenu onDelete={onDelete} onRename={() => setIsEditingName(true)} />
         </td>
       </tr>
 
-      {/* Expanded rules section */}
       {expanded && (
         <tr>
-          <td colSpan={5} className="bg-gray-950/50 px-4 py-4">
+          <td colSpan={5} className="bg-[#0f172a] px-4 py-4 border-b border-[#334155]">
             <div className="ml-8">
-              <p className="text-xs text-gray-400 mb-3">Alert me of live matches where:</p>
+              <p className="text-xs text-[#475569] font-mono mb-3 uppercase tracking-wider">
+                M&apos;alerter si :
+              </p>
 
-              {loadingRules && (
-                <p className="text-xs text-gray-500">Loading rules...</p>
-              )}
+              {loadingRules && <p className="text-xs text-[#475569] font-mono">Chargement…</p>}
 
               {!loadingRules && rules.length === 0 && (
-                <p className="text-xs text-gray-500 mb-3">No rules yet</p>
+                <p className="text-xs text-[#475569] mb-3">Aucune règle</p>
               )}
 
-              {!loadingRules && rules.map((rule, idx) => (
-                <div key={rule.id}>
-                  <div className="flex items-center justify-between py-2">
-                    <p className="text-sm text-gray-200">{formatRule(rule)}</p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
-                        className="text-gray-400 hover:text-emerald-500 transition-colors"
-                        title="Edit"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteRule(rule.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+              {!loadingRules &&
+                rules.map((rule, idx) => (
+                  <div key={rule.id}>
+                    <div className="flex items-center justify-between py-2">
+                      <p className="text-sm font-mono text-[#94a3b8]">{formatRule(rule)}</p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
+                          className="text-[#475569] hover:text-[#10b981] transition-colors"
+                          title="Modifier"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRule(rule.id)}
+                          className="text-[#475569] hover:text-[#f87171] transition-colors"
+                          title="Supprimer"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
+                    {idx < rules.length - 1 && (
+                      <p className="text-[10px] text-[#475569] font-mono py-1 uppercase tracking-widest">
+                        et
+                      </p>
+                    )}
                   </div>
-                  {idx < rules.length - 1 && (
-                    <p className="text-xs text-gray-600 py-1">and</p>
-                  )}
-                </div>
-              ))}
+                ))}
 
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                  className="bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                 >
-                  + Add Rule
+                  + Ajouter une règle
                 </button>
                 <button
                   disabled
-                  className="bg-gray-800 text-gray-500 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50"
+                  className="bg-[#1e293b] border border-[#334155] text-[#475569] text-xs font-semibold px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50"
                 >
-                  ⏱ History
+                  ⏱ Historique
                 </button>
                 <button
                   disabled
-                  className="bg-gray-800 text-gray-500 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50"
+                  className="bg-[#1e293b] border border-[#334155] text-[#475569] text-xs font-semibold px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50"
                 >
-                  🏆 Leagues: Default
+                  🏆 Ligues : Défaut
                 </button>
               </div>
             </div>
@@ -250,8 +417,7 @@ export default function StrategiesPage() {
   };
 
   const handleDelete = async (strategy: Strategy) => {
-    if (!confirm(`Are you sure you want to delete "${strategy.name}"?`)) return;
-
+    if (!confirm(`Supprimer "${strategy.name}" ?`)) return;
     try {
       await api.deleteStrategy(token, strategy.id);
       setStrategies((prev) => prev.filter((s) => s.id !== strategy.id));
@@ -260,38 +426,58 @@ export default function StrategiesPage() {
     }
   };
 
+  const handleRename = async (strategyId: string, newName: string) => {
+    setStrategies((prev) => prev.map((s) => (s.id === strategyId ? { ...s, name: newName } : s)));
+    try {
+      await api.patchStrategy(token, strategyId, { name: newName });
+    } catch (e) {
+      fetchAll();
+      throw e;
+    }
+  };
+
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-base font-semibold tracking-wide">Strategies</h1>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="font-display text-4xl text-[#f1f5f9] tracking-wide leading-none">
+            STRATÉGIES
+          </h1>
+          {!loading && strategies.length > 0 && (
+            <p className="text-xs text-[#475569] font-mono mt-1">
+              {strategies.length} stratégie{strategies.length > 1 ? 's' : ''} configurée
+              {strategies.length > 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
         <button
           onClick={() => router.push('/strategies/create')}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+          className="bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] text-xs font-semibold px-4 py-2 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.35)]"
         >
-          + New
+          + Nouvelle
         </button>
       </div>
 
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center h-48">
-          <span className="text-gray-600 text-sm">Loading…</span>
+          <span className="text-[#475569] text-sm font-mono">Chargement…</span>
         </div>
       )}
 
       {/* Error */}
-      {!loading && error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+      {!loading && error && <p className="text-[#f87171] text-xs font-mono mt-2">{error}</p>}
 
       {/* Empty state */}
       {!loading && !error && strategies.length === 0 && (
-        <div className="flex flex-col items-center justify-center h-48 text-gray-600">
-          <p className="text-sm">No strategies yet</p>
+        <div className="flex flex-col items-center justify-center h-48 border border-dashed border-[#334155] rounded-xl">
+          <p className="text-sm text-[#475569]">Aucune stratégie</p>
           <button
             onClick={() => router.push('/strategies/create')}
-            className="mt-2 text-emerald-500 text-xs hover:underline"
+            className="mt-3 text-[#10b981] text-xs hover:text-[#34d399] transition-colors"
           >
-            Create your first →
+            Créer votre première →
           </button>
         </div>
       )}
@@ -301,20 +487,20 @@ export default function StrategiesPage() {
         <div className="hidden sm:block">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-gray-800">
-                <th className="pb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name / Outcome
+              <tr className="border-b border-[#334155]">
+                <th className="pb-3 text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest">
+                  Nom / Objectif
                 </th>
-                <th className="pb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="pb-3 text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest">
                   Picks
                 </th>
-                <th className="pb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="pb-3 text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest">
                   Hit %
                 </th>
-                <th className="pb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                <th className="pb-3 text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest">
+                  Statut
                 </th>
-                <th className="pb-2" />
+                <th className="pb-3" />
               </tr>
             </thead>
             <tbody>
@@ -324,6 +510,7 @@ export default function StrategiesPage() {
                   strategy={s}
                   onToggle={() => handleToggle(s)}
                   onDelete={() => handleDelete(s)}
+                  onRename={(newName) => handleRename(s.id, newName)}
                 />
               ))}
             </tbody>
@@ -333,28 +520,15 @@ export default function StrategiesPage() {
 
       {/* Mobile cards */}
       {!loading && strategies.length > 0 && (
-        <div className="sm:hidden space-y-2">
+        <div className="sm:hidden space-y-3">
           {strategies.map((s) => (
-            <div key={s.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium">{s.name}</p>
-                  <p className="text-xs text-gray-500">{s.desired_outcome ?? '—'}</p>
-                </div>
-                <ActionsMenu strategy={s} onDelete={() => handleDelete(s)} />
-              </div>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
-                <div className="flex gap-4">
-                  <span className="text-xs text-gray-500">
-                    Picks <span className="text-gray-300">0</span>
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Hit% <span className="text-gray-300">0%</span>
-                  </span>
-                </div>
-                <Toggle on={s.is_active} onToggle={() => handleToggle(s)} />
-              </div>
-            </div>
+            <StrategyCard
+              key={s.id}
+              strategy={s}
+              onToggle={() => handleToggle(s)}
+              onDelete={() => handleDelete(s)}
+              onRename={(newName) => handleRename(s.id, newName)}
+            />
           ))}
         </div>
       )}

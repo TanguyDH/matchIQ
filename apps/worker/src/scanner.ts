@@ -29,7 +29,7 @@ export async function scanMatches(): Promise<void> {
   console.log('[Scanner] Starting scan cycle...');
 
   try {
-    // 1. Load all active IN_PLAY strategies
+    // 1. Load all active strategies (IN_PLAY + PRE_MATCH)
     const strategies = await loadActiveStrategies();
     if (strategies.length === 0) {
       console.log('[Scanner] No active strategies found');
@@ -70,7 +70,7 @@ export async function scanMatches(): Promise<void> {
         // No need to fetch separately if we use proper includes in the API call
 
         // Normalize to MatchSnapshot (SportMonks structure)
-        const match = providerService.normalizeToMatchSnapshot(fixture);
+        const match = await providerService.normalizeToMatchSnapshot(fixture);
 
         // DEBUG: Log match data
         console.log(
@@ -114,7 +114,7 @@ async function loadActiveStrategies(): Promise<StrategyWithRules[]> {
     .from('strategies')
     .select('*')
     .eq('is_active', true)
-    .eq('alert_type', 'IN_PLAY');
+    .in('alert_type', ['IN_PLAY', 'PRE_MATCH']);
 
   if (strategiesError) {
     console.error('[Scanner] Failed to load strategies:', strategiesError);

@@ -54,30 +54,32 @@ export default function MetricDropdown({
           setOpen((s) => !s);
           setSearch('');
         }}
-        className="w-full flex items-center justify-between bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
+        className="w-full flex items-center justify-between bg-[#1e293b] border border-[#334155] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] transition-colors"
       >
-        <span className={selectedLabel ? 'text-gray-100' : 'text-gray-600'}>
-          {selectedLabel ?? 'Select metric…'}
+        <span className={selectedLabel ? 'text-[#f1f5f9]' : 'text-[#475569]'}>
+          {selectedLabel ?? 'Sélectionner une métrique…'}
         </span>
-        <span className="text-gray-600">▾</span>
+        <span className="text-[#475569]">▾</span>
       </button>
 
       {open && (
-        <div className="absolute z-30 left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-64 flex flex-col">
+        <div className="absolute z-30 left-0 right-0 mt-1 bg-[#1e293b] border border-[#334155] rounded-lg shadow-[0_16px_40px_rgba(0,0,0,0.6)] max-h-64 flex flex-col">
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search…"
+            placeholder="Rechercher…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="sticky top-0 bg-gray-800 border-b border-gray-700 px-3 py-2 text-xs text-gray-100 placeholder-gray-600 focus:outline-none"
+            className="sticky top-0 bg-[#0f172a] border-b border-[#334155] px-3 py-2 text-xs text-[#f1f5f9] placeholder-[#475569] focus:outline-none rounded-t-lg"
           />
 
           <div className="overflow-y-auto flex-1">
-            {grouped.length === 0 && <p className="px-3 py-3 text-xs text-gray-600">No results</p>}
+            {grouped.length === 0 && (
+              <p className="px-3 py-3 text-xs text-[#475569]">Aucun résultat</p>
+            )}
             {grouped.map(([group, items]) => (
               <div key={group}>
-                <p className="px-3 pt-2 pb-0.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <p className="px-3 pt-2 pb-0.5 text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-widest">
                   {group}
                 </p>
                 {items.map((item) => (
@@ -91,8 +93,8 @@ export default function MetricDropdown({
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
                       item.key === selected
-                        ? 'bg-emerald-600/20 text-emerald-400'
-                        : 'text-gray-300 hover:bg-gray-700'
+                        ? 'bg-[rgba(16,185,129,0.1)] text-[#10b981]'
+                        : 'text-[#94a3b8] hover:bg-[#334155]'
                     }`}
                   >
                     {item.label}

@@ -1,409 +1,270 @@
-# agent.md — Football Live Strategy Scanner (MVP) — **STRICT SPEC (Claude Code Optimized)**
+# agent.md — MatchIQ Football Strategy Scanner
 
-> This document is the single source of truth.
-> Claude Code must follow it literally.
-> If anything is ambiguous, **do not guess**: add a TODO comment and propose the smallest assumption.
-
----
-
-## 0) Product Goal (MVP)
-
-Build a real-time football strategy scanner:
-
-* Users create **Strategies** composed of multiple **Rules** (AND logic)
-* A **Worker** continuously scans live matches via an external provider API
-* When all rules match a live match, the system creates a **Trigger** and sends an **Alert**
-* The system tracks **Performance** (triggers/hits/misses/hit rate)
-* UI replicates the reference screens structure (Create Strategy, Add Rule, Strategy List)
-
-MVP focus: **strategy creation → scanning → telegram alerts → dashboard tracking**.
+> Single source of truth for architecture and conventions.
+> Follow literally. Any deviation is a bug.
 
 ---
 
-## 1) Hard Constraints (Non-Negotiable)
+## 0) Current State
 
-### Separation of Responsibilities
+**Fully implemented and operational:**
 
-1. **API must never run scanning loops.**
-   No `setInterval` / cron / polling inside the API service.
-2. **Worker must never expose public HTTP endpoints** (except optional healthcheck).
-3. **Frontend must never use Supabase service role key.**
-   Frontend uses anon key + user session only.
-4. **All writes to sensitive tables must be server-side enforced** (RLS + server calls).
-5. **No business logic in controllers** (API). Controllers only validate/route.
-6. **Rule evaluation must be deterministic** and pure:
-
-   * No random
-   * No time-dependent behavior unless explicitly passed in
-   * No external calls inside the evaluation function
-
-### Data Integrity
-
-7. **Dedup is mandatory:** the same `(strategyId, matchId)` must not trigger twice.
-   Enforce with **DB unique constraint** + Redis key.
-8. **Idempotency:** alerts must be safe to retry without duplicates.
-
-### MVP Scope Discipline
-
-9. No backtesting, no marketplace, no AI suggestions in MVP.
-10. No “magical” inference of metrics: metric mapping must be explicit and typed.
+✅ Monorepo (npm workspaces)
+✅ Next.js 15 Web App (App Router)
+✅ NestJS REST API
+✅ Supabase schema with RLS
+✅ Worker with BullMQ + Redis
+✅ Telegram alerts
+✅ SportMonks API integration (Advanced Plan + Premium Odds)
+✅ Rule engine — 26 IN_PLAY metrics
+✅ Rule engine — 402 PRE_MATCH metrics
+✅ Rule engine — 412 ODDS metrics (pm + live)
+✅ Deduplication (Redis + DB unique constraint)
 
 ---
 
-## 2) Tech Stack (Strict)
+## 1) Architecture Laws (Immutable)
 
-### Frontend
-
-* Ionic React + TypeScript
-* TailwindCSS (desktop density)
-* TanStack Table for strategy tables
-* Supabase JS client (auth/session)
-
-Targets:
-
-* iOS (Capacitor)
-* Android (Capacitor)
-* Web/Desktop (PWA)
-
-### Backend
-
-* NestJS (TypeScript) for REST API
-* Supabase Postgres for DB + Auth
-* Redis for:
-
-  * cache
-  * dedup keys
-  * queues (BullMQ)
-* Worker: Node TS + BullMQ consumer (can be NestJS, but keep minimal)
+1. **API never scans.** No polling, no background jobs in API.
+2. **Worker never exposes public HTTP endpoints.** Only optional healthcheck.
+3. **rule-engine never performs IO.** Pure evaluation function only.
+4. **shared-types is the single source of truth for metrics.** No metric defined elsewhere.
+5. **No provider raw payload inside rule-engine.** Normalize to MatchSnapshot first.
+6. **No metric in UI without being defined in shared-types.**
+7. **Dedup enforced at two levels:**
+   - Redis key with TTL (soft dedup, 2h)
+   - DB unique constraint `(strategy_id, match_id)` (hard dedup)
 
 ---
 
-## 3) Repo Layout (Monorepo)
+## 2) Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 15, React 19, TypeScript, TailwindCSS |
+| Backend | NestJS (TypeScript), Supabase Postgres + Auth + RLS |
+| Worker | Node.js, BullMQ, Redis |
+| Data | SportMonks API v3 (Football Advanced + Premium Odds) |
+| Alerts | Telegram Bot |
+
+---
+
+## 3) Repo Layout
 
 ```
-/ (repo root)
-  agent.md
-  README.md
-
-  apps/
-    web/            # Ionic React app
-    api/            # NestJS REST API
-    worker/         # BullMQ worker service
-
-  packages/
-    shared-types/   # shared TS types, enums, DTO interfaces
-    rule-engine/    # pure evaluation engine (no IO)
-
-  infra/
-    docker-compose.yml
-    .env.example
+/
+├── agent.md
+├── package.json              # npm workspaces root
+├── tsconfig.base.json
+│
+├── apps/
+│   ├── web/                  # Next.js 15
+│   │   ├── app/
+│   │   │   ├── (auth)/       # login, signup
+│   │   │   └── (app)/        # strategies, live (auth-guarded)
+│   │   └── src/
+│   │       ├── components/   # NavBar, Toggle, MetricDropdown, RuleChip
+│   │       ├── context/      # AuthContext
+│   │       ├── api/          # client.ts
+│   │       └── supabase.ts
+│   │
+│   ├── api/                  # NestJS REST API
+│   │   └── src/
+│   │       ├── strategies/
+│   │       ├── rules/
+│   │       ├── live-matches/
+│   │       ├── supabase/
+│   │       ├── auth/
+│   │       └── config/
+│   │
+│   └── worker/               # Background scanner
+│       └── src/
+│           ├── main.ts                    # Entry point + polling loop
+│           ├── config.ts                  # Env config
+│           ├── scanner.ts                 # Core scan cycle
+│           ├── provider-service.ts        # SportMonks → MatchSnapshot
+│           ├── prematch-calculator.ts     # PRE_MATCH metrics computation
+│           ├── metrics-catalog.ts         # IN_PLAY metric type_id mapping
+│           ├── standings-cache.ts         # League standings cache
+│           ├── data-requirements-analyzer.ts
+│           ├── trigger-service.ts
+│           ├── performance-service.ts
+│           ├── telegram.ts
+│           ├── queues.ts
+│           ├── redis.ts
+│           ├── supabase.ts
+│           ├── replay.ts
+│           ├── replay-mode.ts
+│           └── mock-provider.ts
+│
+├── packages/
+│   ├── shared-types/         # All types + metric definitions
+│   │   └── src/index.ts
+│   │
+│   └── rule-engine/          # Pure evaluation engine
+│       └── src/
+│           ├── index.ts      # evaluateStrategy()
+│           └── metrics-logic.ts  # All metric extractors
+│
+└── supabase/
+    └── migrations/
 ```
 
-Rules:
+---
 
-* `packages/rule-engine` must have **zero** runtime dependencies on NestJS/Supabase/Redis.
-* `packages/shared-types` contains **only types** (no runtime logic).
+## 4) Metric System
+
+**Location:** `packages/shared-types/src/index.ts` → `METRICS_BY_TYPE`
+
+### Counts
+| Type | Count | Status |
+|---|---|---|
+| IN_PLAY | 26 | ✅ Operational |
+| PRE_MATCH | 402 | ✅ Operational |
+| ODDS | 412 | ✅ Operational |
+
+### IN_PLAY — SportMonks type_id mapping (in `metrics-catalog.ts`)
+Attacks (43), Dangerous Attacks (44), Shots (42), Shots On Target (86), Shots Off Target (41), Corners (34), Possession (45), Passes Accuracy (82), Crosses (98), Key Passes (117), Offsides (51), Saves (57), Free Kicks (55), Fouls (56), Yellow Cards (84), Red Cards (83), Shots Blocked (58) + calculated: momentum, crossing_accuracy_pct, goals, penalties, substitutions, injuries, match_timer, minutes_since_last_goal, league_position.
+
+### PRE_MATCH — Computed from last 5/10 matches (in `prematch-calculator.ts`)
+Goals averages, win/draw/loss %, BTTS %, clean sheet %, over/under %, half-time metrics, corners, shots — all with L5/L10 × home/away/all variants.
+
+### ODDS — Extracted from SportMonks (in `provider-service.ts`)
+- **Pre-match** (`fixture.odds`): 1X2, HT Result, Goals O/U, 1H Goals O/U, BTTS, Odd/Even, Corners O/U, 1H Corners O/U
+- **Live** (`fixture.inplayodds`): 1X2, HT Result, Goals O/U, 1H Goals, BTTS (FT/1H/2H), Odd/Even, Corners O/U, 1H Corners O/U
 
 ---
 
-## 4) UI Screens (Must Match Reference Flow)
+## 5) MatchSnapshot Contract
 
-### Screen A — Strategies Dashboard
-
-Route: `/strategies`
-
-Must show:
-
-* Strategy Name / Outcome
-* Picks (trigger count)
-* Hit %
-* Status toggle (ON/OFF)
-* Controls dropdown (Edit / Duplicate / Delete)
-
-### Screen B — Create Strategy
-
-Route: `/strategies/create`
-
-Fields:
-
-* Strategy Name (required)
-* Desired outcome / Auto-striking (optional dropdown)
-* Alert Type (In-Play / Pre-Match toggle)
-* Save / Cancel
-
-### Screen C — Add Strategy Rule
-
-Route: `/strategies/:id/rules/add`
-
-Tabs:
-
-* In-Play Stats
-* Pre-Match Stats
-* Odds
-
-Fields:
-
-* Value dropdown (searchable, grouped)
-* Comparator dropdown (>=, <=, =, >, <, !=)
-* Target Value input
-* Save Rule
-* Enable Advanced Mode
-
-**Preview area** must show something like:
-`Preview: <Metric> <Comparator> <Value>`
-
----
-
-## 5) Domain Models (Strict)
-
-### Strategy
-
-* id (uuid)
-* user_id
-* name
-* description?
-* mode: `EASY | ADVANCED`
-* alert_type: `IN_PLAY | PRE_MATCH`
-* desired_outcome?: string
-* is_active: boolean
-* created_at
-
-### Rule
-
-* id
-* strategy_id
-* value_type: `IN_PLAY | PRE_MATCH | ODDS`
-* metric: string (from an allowed enum list)
-* comparator: `GTE | LTE | EQ | GT | LT | NEQ`
-* value: number
-* team_scope?: `HOME | AWAY | TOTAL | FAVOURITE | UNDERDOG | WINNING_TEAM | LOSING_TEAM | DIFFERENCE`
-* time_filter?: optional object (ADVANCED only)
-
-### Trigger
-
-* id
-* strategy_id
-* match_id
-* triggered_at
-* result?: `HIT | MISS`
-
-### Performance
-
-* strategy_id (unique)
-* total_triggers
-* total_hits
-* total_misses
-* hit_rate
-
----
-
-## 6) Database Requirements (Supabase Postgres + RLS)
-
-### RLS
-
-* User can only access their own strategies, rules, triggers, performance.
-
-### Uniqueness (Dedup)
-
-Add DB constraint:
-
-* unique(strategy_id, match_id) on triggers
-
-### Recommended Tables
-
-* strategies
-* rules
-* triggers
-* performance
-* user_profiles (optional)
-* alert_logs (optional but recommended)
-
----
-
-## 7) Rule Engine Contract (Strict)
-
-Location: `packages/rule-engine`
-
-### Inputs
-
-* `Strategy` (with rules)
-* `MatchSnapshot` (provider data normalized to internal schema)
-
-### Output
-
-Must return a structured evaluation, not just boolean.
-
-```ts
-type EvaluationResult = {
-  passed: boolean;
-  failedRuleId?: string;
-  matchedRules: Array<{
-    ruleId: string;
-    metric: string;
-    comparator: string;
-    target: number;
-    actual: number;
-  }>;
-};
+```typescript
+interface MatchSnapshot {
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  minute: number | null;
+  isLive: boolean;
+  league: string;
+  inPlay: Record<string, number>;    // IN_PLAY metrics
+  preMatch: Record<string, number>;  // PRE_MATCH metrics (home_* / away_*)
+  odds: Record<string, number>;      // ODDS (home_pm_odds_1x2, live_odds_btts_yes, ...)
+  // + homeForm, awayForm, lastGoal, halfTimeScore, homePosition, awayPosition
+}
 ```
 
-### Required Function Signature
+**Rules:**
+- `inPlay` keys: `home_*`, `away_*`, or metric name directly (match-level)
+- `preMatch` keys: always `home_*` / `away_*`
+- `odds` keys: `home_pm_odds_1x2`, `away_pm_odds_1x2`, `pm_odds_1x2_draw`, `home_live_odds_1x2`, `pm_odds_btts_yes`, `live_odds_corners_over_9_5`, etc.
 
-```ts
-evaluateStrategy(strategy: Strategy, match: MatchSnapshot): EvaluationResult
+---
+
+## 6) Rule Engine
+
+**Location:** `packages/rule-engine/src/index.ts`
+
+```typescript
+evaluateStrategy(strategy: StrategyWithRules, match: MatchSnapshot): EvaluationResult
 ```
 
-Rules:
+Pure function. No IO. No randomness. Deterministic.
 
-* No DB access here.
-* No HTTP calls here.
-* No “current time” reads; if needed, time must be passed via `match`.
+### Comparators
+`GTE` `LTE` `EQ` `GT` `LT` `NEQ` — no implicit coercion.
 
----
+### Team Scopes
+`HOME` `AWAY` `TOTAL` `DIFFERENCE` `FAVOURITE` `UNDERDOG` `FAVOURITE_HOME` `FAVOURITE_AWAY` `UNDERDOG_HOME` `UNDERDOG_AWAY` `WINNING_TEAM` `LOSING_TEAM` `EITHER_TEAM` `EITHER_OPPONENT`
 
-## 8) Worker Behavior (Strict)
-
-Worker is responsible for all continuous operations.
-
-### Mandatory responsibilities
-
-1. Poll live matches (every X seconds)
-2. Normalize provider data into `MatchSnapshot`
-3. Load all active strategies for relevant alert type
-4. Evaluate using `rule-engine`
-5. If pass:
-
-   * Create Trigger (DB)
-   * Send Alert (Telegram)
-   * Update Performance (DB)
-6. Dedup enforcement:
-
-   * check Redis key `dedup:<strategyId>:<matchId>`
-   * enforce DB unique constraint as final gate
-
-### Poll interval
-
-Default: **15 seconds** (configurable via env)
-
-### Queue Design (BullMQ)
-
-* `scan-tick` job: triggers one scanning cycle
-* `send-alert` job: sends Telegram message (retryable)
-
-Worker must be able to run multiple instances.
+FAVOURITE/UNDERDOG resolved via `home_pm_odds_1x2` / `away_pm_odds_1x2`.
 
 ---
 
-## 9) Alerts (Telegram MVP)
+## 7) Scan Cycle
 
-### Telegram message must include:
-
-* Strategy name
-* Match (Home vs Away)
-* Current score
-* Minute
-* Why it triggered (matchedRules summary)
-
-Alerts must be retry-safe:
-
-* if job retries, it must not duplicate the same alert for same trigger.
+1. Load active strategies from DB
+2. Analyze data requirements
+3. Fetch live fixtures (`/livescores/inplay?include=state;scores;participants;statistics.type;league;events;participants.latest.scores;participants.latest.statistics;odds;inplayOdds`)
+4. Normalize each fixture → MatchSnapshot
+5. Evaluate each strategy via rule-engine
+6. On pass: check Redis dedup → DB insert → Telegram alert
 
 ---
 
-## 10) Build Order (Strict Execution Plan)
+## 8) SportMonks API
 
-Claude Code must implement in this exact order:
+- **Base URL:** `https://api.sportmonks.com/v3/football`
+- **Plan:** Advanced + Premium Odds
+- **Rate Limit:** 3000 req/hour
+- **Pre-match odds:** `fixture.odds` (flat array, market_id, label, value, total, created_at)
+- **Live odds:** `fixture.inplayodds` (market_id, label, value, total, bookmaker_id, latest_bookmaker_update)
 
-### Phase 0 — Repo Setup
-
-* Create monorepo layout
-* Add tooling (TS config, lint, prettier)
-* Add `.env.example`
-
-### Phase 1 — Supabase Schema + RLS (minimal)
-
-* Create tables: strategies, rules, triggers, performance
-* RLS policies: user isolation
-* unique(strategy_id, match_id) constraint
-
-### Phase 2 — API (NestJS) CRUD only
-
-* Auth validation (Supabase JWT)
-* Endpoints:
-
-  * POST /strategies
-  * GET /strategies
-  * GET /strategies/:id
-  * PATCH /strategies/:id
-  * POST /strategies/:id/rules
-  * GET /strategies/:id/rules
-  * DELETE /rules/:id
-* No scanning logic, no queues yet.
-
-### Phase 3 — Web App (Ionic) UI only
-
-* Strategies Dashboard
-* Create Strategy page
-* Add Rule page (tabs + searchable grouped dropdown + comparator + preview)
-* Wire to API endpoints
-
-### Phase 4 — Rule Engine package
-
-* Implement evaluation contract
-* Unit tests for comparator + metrics mapping
-
-### Phase 5 — Worker MVP
-
-* Poll provider mock (temporary)
-* Evaluate strategies
-* Create triggers
-* Send Telegram alerts
-* Dedup via DB unique constraint
-
-### Phase 6 — Redis + BullMQ
-
-* Move scanning to queue tick
-* Add send-alert queue with retries
-* Add Redis dedup keys + TTL
+Key market IDs:
+| Market | ID | Labels |
+|---|---|---|
+| 1X2 (PM) | 1 | Home / Draw / Away |
+| Goals O/U (PM) | 80 | Over / Under + total |
+| HT Result (PM) | 31 | Home / Draw / Away |
+| 1H Goals (PM) | 28 | Over / Under + total |
+| BTTS (PM) | 14 | Yes / No |
+| BTTS 1H (PM) | 15 | Yes / No |
+| Odd/Even (PM) | 44 | Odd / Even |
+| Corners (PM) | 67 | Over / Under + total |
+| 1H Corners (PM) | 70 | Over / Under + total |
+| 1X2 (Live) | 1 | 1 / X / 2 |
+| Goals O/U (Live) | 4, 7 | Over / Under + total |
+| HT Result (Live) | 31 | 1 / X / 2 |
+| 1H Goals (Live) | 28 | Over / Under + total |
+| BTTS (Live) | 14 | Yes / No |
+| BTTS 1H (Live) | 15 | Yes / No |
+| BTTS 2H (Live) | 16 | Yes / No |
+| Odd/Even (Live) | 12 | Odd / Even |
+| Corners (Live) | 68 | Over / Under + total |
+| 1H Corners (Live) | 70 | Over / Under + total |
 
 ---
 
-## 11) Coding Standards (Strict)
+## 9) Environment Variables
 
-* TypeScript strict everywhere
-* No `any` allowed (except in narrow provider parsing with explicit runtime validation)
-* Controllers are thin
-* Services own logic
-* Use runtime validation for external API payloads (e.g., zod)
-* All env values are validated at startup
+### apps/worker/.env
+```
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+SPORTMONKS_API_KEY=
+SPORTMONKS_BASE_URL=https://api.sportmonks.com/v3/football
+POLL_INTERVAL=15000
+DEDUP_TTL=7200
+USE_MOCK_DATA=false
+SNAPSHOT_FIXTURE_LIMIT=999
+```
+
+### apps/web/.env
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+### infra/.env (loaded by API)
+```
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_JWT_SECRET=
+REDIS_URL=redis://localhost:6379
+API_PORT=3000
+```
 
 ---
 
-## 12) “Do Not” List (Strict)
+## 10) Known Limitations
 
-* Do not put scanning logic in API
-* Do not store provider payload raw without normalization
-* Do not implement “advanced features” outside MVP scope
-* Do not skip dedup requirement
-* Do not hardcode metrics lists in multiple places (single source in shared-types)
-* Do not bypass RLS policies
-
----
-
-## 13) Open Questions (If Unknown, Mark TODO)
-
-If any of these are not specified, add TODO and implement minimal placeholder:
-
-* Exact provider (API-Football vs API-Sports)
-* Exact odds markets list for MVP
-* “Desired outcome” hit logic timing (when to mark HIT/MISS)
-
----
-
-## Final Acceptance Criteria (MVP)
-
-✅ User can sign in, create a strategy, add multiple rules
-✅ Worker scans live matches and triggers **exactly once** per match
-✅ Telegram alert is sent with clear “why it triggered”
-✅ Dashboard shows strategies, status toggle, picks count, hit %
-✅ Code is modular, scalable, and follows all hard constraints
+- **xG**: Requires "Advanced xG" add-on (403 Forbidden without it)
+- **Exchange Matched Amount**: Requires Betfair API (not integrated)
+- **Live odds coverage**: Depends on match — only matches with `has_premium_odds: true` have `fixture.inplayodds`
+- **PRE_MATCH data**: Requires `participants.latest` — unavailable for knockout rounds (empty array)

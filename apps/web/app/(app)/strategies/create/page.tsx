@@ -12,7 +12,7 @@ export default function CreateStrategyPage() {
 
   const [name, setName] = useState('');
   const [desiredOutcome, setDesiredOutcome] = useState('');
-  const [alertType, setAlertType] = useState<AlertType>('IN_PLAY');
+  const [alertType] = useState<AlertType>('IN_PLAY');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,37 +37,44 @@ export default function CreateStrategyPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-200 text-sm">
+      <div className="flex items-center gap-3 mb-8">
+        <button
+          onClick={() => router.back()}
+          className="text-[#475569] hover:text-[#f1f5f9] text-sm transition-colors"
+        >
           ←
         </button>
-        <h1 className="text-base font-semibold">Create Strategy</h1>
+        <h1 className="font-display text-3xl text-[#f1f5f9] tracking-wide">NOUVELLE STRATÉGIE</h1>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {/* Name */}
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Strategy Name *</label>
+          <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
+            Nom de la stratégie *
+          </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            placeholder="e.g. High possession trigger"
+            placeholder="ex. Pression haute en 2e mi-temps"
             autoFocus
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition-colors"
+            className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
           />
         </div>
 
         {/* Desired Outcome */}
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Desired Outcome</label>
+          <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
+            Objectif de pari
+          </label>
           <select
             value={desiredOutcome}
             onChange={(e) => setDesiredOutcome(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 appearance-none focus:outline-none focus:border-emerald-500 transition-colors"
+            className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
           >
-            <option value="">None</option>
+            <option value="">Aucun</option>
             {Object.entries(
               DESIRED_OUTCOMES.reduce<Record<string, typeof DESIRED_OUTCOMES>>((acc, o) => {
                 (acc[o.group] ??= []).push(o);
@@ -85,44 +92,38 @@ export default function CreateStrategyPage() {
           </select>
         </div>
 
-        {/* Alert Type toggle */}
+        {/* Alert Type */}
         <div>
-          <label className="block text-xs text-gray-500 mb-1.5">Alert Type</label>
+          <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
+            Type d&apos;alerte
+          </label>
           <div className="flex gap-2">
-            {(['IN_PLAY', 'PRE_MATCH'] as const).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setAlertType(type)}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                  alertType === type
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-900 text-gray-400 border border-gray-700 hover:border-gray-600'
-                }`}
-              >
-                {type === 'IN_PLAY' ? 'In-Play' : 'Pre-Match'}
-              </button>
-            ))}
+            <button
+              type="button"
+              className="flex-1 py-2 rounded-lg text-xs font-semibold bg-[#10b981] text-[#0f172a]"
+            >
+              In-Play
+            </button>
           </div>
         </div>
 
         {/* Error */}
-        {error && <p className="text-red-400 text-xs">{error}</p>}
+        {error && <p className="text-[#f87171] text-xs font-mono">{error}</p>}
 
         {/* Actions */}
         <div className="flex gap-3 pt-2">
           <button
             onClick={handleSave}
             disabled={!name.trim() || saving}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+            className="flex-1 bg-[#10b981] hover:bg-[#34d399] disabled:bg-[#334155] disabled:text-[#475569] text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.35)]"
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? 'Enregistrement…' : 'Enregistrer'}
           </button>
           <button
             onClick={() => router.back()}
-            className="px-4 py-2.5 rounded-lg text-xs text-gray-400 hover:text-gray-200 border border-gray-700 transition-colors"
+            className="px-4 py-2.5 rounded-lg text-xs text-[#94a3b8] hover:text-[#f1f5f9] border border-[#334155] transition-colors"
           >
-            Cancel
+            Annuler
           </button>
         </div>
       </div>

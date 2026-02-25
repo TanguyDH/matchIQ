@@ -101,12 +101,25 @@ export interface MatchSnapshot {
   awayScore: number;
   minute: number;
   isLive: boolean;
+  // Match context
+  league?: string;
+  leagueCountry?: string; // Country code for flag emoji (e.g., 'GB', 'ES')
+  homePosition?: number; // League standings position
+  awayPosition?: number;
+  homeForm?: string[]; // Last 5 results: ['W', 'D', 'L', 'W', 'L']
+  awayForm?: string[];
+  lastGoal?: {
+    team: 'home' | 'away';
+    minute: number;
+    minutesAgo?: number;
+  };
+  halfTimeScore?: { home: number; away: number };
   // In-play stats
   inPlay: Record<string, number>; // key = metric name (e.g., 'home_goals'), value = metric value
   // Pre-match stats
   preMatch: Record<string, number>;
   // Odds
-  odds: Record<string, number>;
+  odds: Record<string, number>; // e.g., { home_win: 2.35, draw: 3.30, away_win: 2.90, over_1_5: 1.44, under_1_5: 2.63 }
 }
 
 export interface EvaluationResult {
@@ -487,7 +500,7 @@ const IN_PLAY_METRICS: MetricEntry[] = [
   // Match Context
   { key: 'match_timer', label: 'Match Timer (Minute)', group: 'Match Context', requiresTeamScope: false },
   { key: 'minutes_since_last_goal', label: 'Minutes since last goal', group: 'Match Context', requiresTeamScope: false },
-  { key: 'exchange_matched_amount', label: 'Exchange Matched Amount (£)', group: 'Match Context', requiresTeamScope: false },
+  // { key: 'exchange_matched_amount', label: 'Exchange Matched Amount (£)', group: 'Match Context', requiresTeamScope: false }, // TODO: Requires Betfair API integration
   { key: 'league_position', label: 'League Position', group: 'Match Context', requiresTeamScope: true },
 
   // Scoring & Outcome
@@ -495,7 +508,7 @@ const IN_PLAY_METRICS: MetricEntry[] = [
   { key: 'penalties', label: 'Penalties', group: 'Scoring & Outcome', requiresTeamScope: true },
 
   // Attacking Play
-  { key: 'xg', label: 'xG', group: 'Attacking Play', requiresTeamScope: true },
+  // { key: 'xg', label: 'xG', group: 'Attacking Play', requiresTeamScope: true }, // TODO: Requires Advanced xG add-on (403 Forbidden)
   { key: 'momentum', label: 'Momentum', group: 'Attacking Play', requiresTeamScope: true },
   { key: 'shots_on_target', label: 'Shots On Target', group: 'Attacking Play', requiresTeamScope: true },
   { key: 'shots_off_target', label: 'Shots Off Target', group: 'Attacking Play', requiresTeamScope: true },
@@ -1404,3 +1417,7 @@ export function metricRequiresTeamScope(key: string): boolean {
   }
   return false; // fallback: if metric not found, assume no team scope needed
 }
+
+// ─── Timer utilities ──────────────────────────────────────────────────────────
+export { calculateMatchMinute } from './timer-utils';
+

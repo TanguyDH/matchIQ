@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const CreateRuleSchema = z.object({
-  value_type: z.enum(['IN_PLAY', 'PRE_MATCH', 'ODDS']),
+  value_type: z.enum(['IN_PLAY', 'PRE_MATCH', 'ODDS']).default('IN_PLAY'),
   metric: z.string().min(1),
   comparator: z.enum(['GTE', 'LTE', 'EQ', 'GT', 'LT', 'NEQ']),
   value: z.number().finite(),

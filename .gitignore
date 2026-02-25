@@ -61,5 +61,8 @@ temp/
 *.tmp
 *.log
 
+# Redis
+*.rdb
+
 # Build outputs
 *.js.map

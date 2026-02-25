@@ -9,7 +9,10 @@ import type {
   StrategyWithRules,
   TeamScope,
 } from '@matchiq/shared-types';
-import { extractInPlayMetric } from './metrics-logic';
+import { extractInPlayMetric, extractPreMatchMetric } from './metrics-logic';
+
+// Export for testing and external use
+export { extractInPlayMetric, extractPreMatchMetric } from './metrics-logic';
 
 /**
  * Evaluates a strategy against a match snapshot.
@@ -79,27 +82,25 @@ function extractMetricValue(rule: Rule, match: MatchSnapshot): number | null {
     return extractInPlayMetric(rule, match);
   }
 
-  // Fallback for PRE_MATCH and ODDS (generic extraction)
-  let dataSource: Record<string, number>;
-
-  switch (rule.value_type) {
-    case 'PRE_MATCH':
-      dataSource = match.preMatch;
-      break;
-    case 'ODDS':
-      dataSource = match.odds;
-      break;
-    default:
-      return null;
+  // Use dedicated logic for PRE_MATCH metrics
+  if (rule.value_type === 'PRE_MATCH') {
+    return extractPreMatchMetric(rule, match);
   }
 
-  // If no team scope, return the metric value directly
-  if (!rule.team_scope) {
-    return dataSource[rule.metric] ?? null;
+  // Fallback for ODDS (generic extraction)
+  if (rule.value_type === 'ODDS') {
+    const dataSource = match.odds;
+
+    // If no team scope, return the metric value directly
+    if (!rule.team_scope) {
+      return dataSource[rule.metric] ?? null;
+    }
+
+    // Handle team scope transformations
+    return extractWithTeamScope(rule.metric, rule.team_scope, dataSource, match);
   }
 
-  // Handle team scope transformations
-  return extractWithTeamScope(rule.metric, rule.team_scope, dataSource, match);
+  return null;
 }
 
 /**
@@ -156,48 +157,79 @@ function extractWithTeamScope(
     }
 
     case 'FAVOURITE': {
-      // Favorite is the team with lower odds (higher probability)
-      // TODO: This requires odds data - for now, use score as proxy
+      // Favourite = team with lower pre-match 1X2 odds (higher probability)
       const homeValue = dataSource[homeKey];
       const awayValue = dataSource[awayKey];
       if (homeValue === undefined || awayValue === undefined) return null;
-      return match.homeScore >= match.awayScore ? homeValue : awayValue;
+      const homeOddsVal = match.odds['home_pm_odds_1x2'];
+      const awayOddsVal = match.odds['away_pm_odds_1x2'];
+      if (homeOddsVal !== undefined && awayOddsVal !== undefined) {
+        return homeOddsVal <= awayOddsVal ? homeValue : awayValue;
+      }
+      // Fallback: home team is conventional favourite
+      return homeValue;
     }
 
     case 'FAVOURITE_HOME': {
-      // Favorite playing at home
+      // Favourite playing at home — return homeValue only if home is the favourite
       const homeValue = dataSource[homeKey];
       if (homeValue === undefined) return null;
-      return match.homeScore >= match.awayScore ? homeValue : 0;
+      const homeOddsVal = match.odds['home_pm_odds_1x2'];
+      const awayOddsVal = match.odds['away_pm_odds_1x2'];
+      if (homeOddsVal !== undefined && awayOddsVal !== undefined) {
+        return homeOddsVal <= awayOddsVal ? homeValue : 0;
+      }
+      return homeValue; // fallback: home is conventional favourite
     }
 
     case 'FAVOURITE_AWAY': {
-      // Favorite playing away
+      // Favourite playing away — return awayValue only if away is the favourite
       const awayValue = dataSource[awayKey];
       if (awayValue === undefined) return null;
-      return match.awayScore > match.homeScore ? awayValue : 0;
+      const homeOddsVal = match.odds['home_pm_odds_1x2'];
+      const awayOddsVal = match.odds['away_pm_odds_1x2'];
+      if (homeOddsVal !== undefined && awayOddsVal !== undefined) {
+        return awayOddsVal <= homeOddsVal ? awayValue : 0;
+      }
+      return 0; // fallback: away is not conventional favourite
     }
 
     case 'UNDERDOG': {
-      // Underdog is the team with higher odds (lower probability)
+      // Underdog = team with higher pre-match 1X2 odds (lower probability)
       const homeValue = dataSource[homeKey];
       const awayValue = dataSource[awayKey];
       if (homeValue === undefined || awayValue === undefined) return null;
-      return match.homeScore < match.awayScore ? homeValue : awayValue;
+      const homeOddsVal = match.odds['home_pm_odds_1x2'];
+      const awayOddsVal = match.odds['away_pm_odds_1x2'];
+      if (homeOddsVal !== undefined && awayOddsVal !== undefined) {
+        return homeOddsVal > awayOddsVal ? homeValue : awayValue;
+      }
+      // Fallback: away team is conventional underdog
+      return awayValue;
     }
 
     case 'UNDERDOG_HOME': {
-      // Underdog playing at home
+      // Underdog playing at home — return homeValue only if home is the underdog
       const homeValue = dataSource[homeKey];
       if (homeValue === undefined) return null;
-      return match.homeScore < match.awayScore ? homeValue : 0;
+      const homeOddsVal = match.odds['home_pm_odds_1x2'];
+      const awayOddsVal = match.odds['away_pm_odds_1x2'];
+      if (homeOddsVal !== undefined && awayOddsVal !== undefined) {
+        return homeOddsVal > awayOddsVal ? homeValue : 0;
+      }
+      return 0; // fallback: home is not conventional underdog
     }
 
     case 'UNDERDOG_AWAY': {
-      // Underdog playing away
+      // Underdog playing away — return awayValue only if away is the underdog
       const awayValue = dataSource[awayKey];
       if (awayValue === undefined) return null;
-      return match.awayScore >= match.homeScore ? awayValue : 0;
+      const homeOddsVal = match.odds['home_pm_odds_1x2'];
+      const awayOddsVal = match.odds['away_pm_odds_1x2'];
+      if (homeOddsVal !== undefined && awayOddsVal !== undefined) {
+        return awayOddsVal > homeOddsVal ? awayValue : 0;
+      }
+      return awayValue; // fallback: away is conventional underdog
     }
 
     case 'WINNING_TEAM': {

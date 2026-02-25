@@ -33,18 +33,35 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-100 text-center mb-8 tracking-tight">
-          Match<span className="text-emerald-500">IQ</span>
-        </h1>
+    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center px-4">
+      {/* Subtle grid */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 opacity-[0.025]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(16,185,129,1) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,1) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+        }}
+      />
+
+      <div className="w-full max-w-sm relative z-10">
+        <div className="text-center mb-10">
+          <span className="font-display text-4xl text-[#10b981] tracking-wider">MATCHIQ</span>
+          <p className="text-xs text-[#475569] font-mono mt-2 tracking-wider uppercase">
+            Créer votre compte
+          </p>
+        </div>
 
         <form
           onSubmit={handleSubmit}
-          className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4"
+          className="bg-[#1e293b] border border-[#334155] rounded-xl p-6 space-y-4 shadow-[0_24px_48px_rgba(0,0,0,0.5)]"
         >
           <div>
-            <label htmlFor="email" className="block text-xs font-medium text-gray-400 mb-1.5">
+            <label
+              htmlFor="email"
+              className="block text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest mb-1.5"
+            >
               Email
             </label>
             <input
@@ -54,14 +71,17 @@ export default function SignUpPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-600 transition-colors"
+              placeholder="vous@exemple.com"
+              className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs font-medium text-gray-400 mb-1.5">
-              Password
+            <label
+              htmlFor="password"
+              className="block text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest mb-1.5"
+            >
+              Mot de passe
             </label>
             <input
               id="password"
@@ -71,25 +91,25 @@ export default function SignUpPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-600 transition-colors"
+              className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
             />
           </div>
 
-          {error && <p className="text-red-400 text-xs">{error}</p>}
+          {error && <p className="text-[#f87171] text-xs font-mono">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold py-2.5 rounded-lg transition-colors"
+            className="w-full bg-[#10b981] hover:bg-[#34d399] disabled:opacity-40 disabled:cursor-not-allowed text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_24px_rgba(16,185,129,0.35)]"
           >
-            {loading ? 'Creating account…' : 'Create account'}
+            {loading ? 'Création…' : 'Créer un compte'}
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-500 mt-5">
-          Already have an account?{' '}
-          <Link href="/login" className="text-emerald-500 hover:text-emerald-400 transition-colors">
-            Sign in
+        <p className="text-center text-xs text-[#475569] mt-5">
+          Déjà un compte ?{' '}
+          <Link href="/login" className="text-[#10b981] hover:text-[#34d399] transition-colors">
+            Se connecter
           </Link>
         </p>
       </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
+  AlertType,
   Comparator,
   COMPARATOR_LABELS,
   COMPARATORS,
@@ -23,8 +24,8 @@ import RuleChip from '@/components/RuleChip';
 
 const TABS: { key: RuleValueType; label: string }[] = [
   { key: 'IN_PLAY', label: 'In-Play' },
-  { key: 'PRE_MATCH', label: 'Pre-Match' },
-  { key: 'ODDS', label: 'Odds' },
+  { key: 'PRE_MATCH', label: 'Pré-Match' },
+  { key: 'ODDS', label: 'Cotes' },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -35,14 +36,12 @@ export default function AddRulePage() {
   const { id: strategyId } = useParams<{ id: string }>();
 
   // ── Remote state ────────────────────────────────────────────────────────
-
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token || !strategyId) return;
-
     Promise.all([api.getStrategy(token, strategyId), api.getRules(token, strategyId)])
       .then(([s, r]) => {
         setStrategy(s);
@@ -52,7 +51,6 @@ export default function AddRulePage() {
   }, [token, strategyId]);
 
   // ── Form state ──────────────────────────────────────────────────────────
-
   const [valueType, setValueType] = useState<RuleValueType>('IN_PLAY');
   const [metric, setMetric] = useState('');
   const [comparator, setComparator] = useState<Comparator>('GTE');
@@ -62,9 +60,9 @@ export default function AddRulePage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Switch tab → reset metric if it belongs to the previous tab
   const currentMetrics = METRICS_BY_TYPE[valueType];
   const metricStillValid = currentMetrics.some((m) => m.key === metric);
+
   useEffect(() => {
     if (metric && !metricStillValid) {
       setMetric('');
@@ -72,23 +70,26 @@ export default function AddRulePage() {
     }
   }, [metric, metricStillValid]);
 
-  // Reset team scope when metric changes and doesn't need it
   useEffect(() => {
-    if (metric && !metricRequiresTeamScope(metric)) {
-      setTeamScope('');
-    }
+    if (metric && !metricRequiresTeamScope(metric)) setTeamScope('');
   }, [metric]);
 
   // ── Handlers ────────────────────────────────────────────────────────────
-
   const handleSave = async () => {
     const numValue = parseFloat(targetValue);
     if (!metric || targetValue === '' || isNaN(numValue)) return;
-    if (needsTeamScope && !teamScope) return; // Team scope required but not selected
+    if (needsTeamScope && !teamScope) return;
 
     setSaving(true);
     setSaveError(null);
     try {
+      if (strategy && valueType !== 'ODDS' && strategy.alert_type !== valueType) {
+        const updatedStrategy = await api.patchStrategy(token, strategyId, {
+          alert_type: valueType as AlertType,
+        });
+        setStrategy(updatedStrategy);
+      }
+
       const rule = await api.createRule(token, strategyId, {
         value_type: valueType,
         metric,
@@ -110,14 +111,26 @@ export default function AddRulePage() {
   const handleDeleteRule = async (ruleId: string) => {
     try {
       await api.deleteRule(token, ruleId);
-      setRules((prev) => prev.filter((r) => r.id !== ruleId));
+      const updatedRules = rules.filter((r) => r.id !== ruleId);
+      setRules(updatedRules);
+
+      if (strategy && updatedRules.length > 0) {
+        const ruleValueTypes = updatedRules.map((r) => r.value_type);
+        const allSameType = ruleValueTypes.every((t) => t === ruleValueTypes[0]);
+        const firstType = ruleValueTypes[0];
+        if (allSameType && firstType !== 'ODDS' && strategy.alert_type !== firstType) {
+          const updatedStrategy = await api.patchStrategy(token, strategyId, {
+            alert_type: firstType as AlertType,
+          });
+          setStrategy(updatedStrategy);
+        }
+      }
     } catch (e) {
       setSaveError((e as Error).message);
     }
   };
 
   // ── Derived ─────────────────────────────────────────────────────────────
-
   const previewLabel = metric ? currentMetrics.find((m) => m.key === metric)?.label : undefined;
   const needsTeamScope = metric ? metricRequiresTeamScope(metric) : false;
   const canSave =
@@ -127,29 +140,27 @@ export default function AddRulePage() {
     (!needsTeamScope || teamScope !== '');
 
   // ── Render ──────────────────────────────────────────────────────────────
-
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => router.push('/strategies')}
-          className="text-gray-400 hover:text-gray-200 text-sm"
+          className="text-[#475569] hover:text-[#f1f5f9] text-sm transition-colors"
         >
           ←
         </button>
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-[#475569] font-mono">
           {strategy?.name ?? '…'}
-          <span className="text-gray-700 mx-1.5">/</span>
-          Add Rule
+          <span className="text-[#334155] mx-1.5">/</span>
+          <span className="text-[#10b981]">Ajouter une règle</span>
         </span>
       </div>
 
-      {/* Load error */}
-      {loadError && <p className="text-red-400 text-xs mb-3">{loadError}</p>}
+      {loadError && <p className="text-[#f87171] text-xs font-mono mb-3">{loadError}</p>}
 
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="flex gap-1 bg-gray-900 rounded-lg p-1 mb-4">
+      <div className="flex gap-1 bg-[#0f172a] border border-[#334155] rounded-lg p-1 mb-5">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -157,8 +168,8 @@ export default function AddRulePage() {
             onClick={() => setValueType(tab.key)}
             className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors ${
               valueType === tab.key
-                ? 'bg-gray-700 text-gray-100'
-                : 'text-gray-500 hover:text-gray-300'
+                ? 'bg-[#1e293b] text-[#10b981]'
+                : 'text-[#475569] hover:text-[#94a3b8]'
             }`}
           >
             {tab.label}
@@ -168,50 +179,51 @@ export default function AddRulePage() {
 
       {/* ── Form fields ──────────────────────────────────────────────── */}
       <div className="space-y-4">
-        {/* Metric and Team Scope - side by side */}
+        {/* Metric + Team Scope */}
         <div className={`grid gap-3 ${needsTeamScope ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {/* Metric */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Metric</label>
+            <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
+              Métrique
+            </label>
             <MetricDropdown metrics={currentMetrics} selected={metric} onChange={setMetric} />
-            <p className="text-xs text-gray-500 mt-1.5">Select the value to be used</p>
+            <p className="text-[10px] text-[#475569] mt-1.5">Valeur à surveiller</p>
           </div>
 
-          {/* Team Scope - only show if metric requires it */}
           {needsTeamScope && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                Team
+              <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
+                Équipe
               </label>
               <select
                 value={teamScope}
                 onChange={(e) => setTeamScope(e.target.value as TeamScope | '')}
                 required
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 appearance-none focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
               >
-                <option value="">Select team...</option>
+                <option value="">Sélectionner…</option>
                 {TEAM_SCOPES.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1.5">
-                Select the team of which the {previewLabel?.toLowerCase() || 'metric'} will be counted
+              <p className="text-[10px] text-[#475569] mt-1.5">
+                Équipe dont la {previewLabel?.toLowerCase() || 'métrique'} est comptée
               </p>
             </div>
           )}
         </div>
 
-        {/* Comparator and Target Value - side by side */}
+        {/* Comparator + Target Value */}
         <div className="grid grid-cols-2 gap-3">
-          {/* Comparator */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Comparator</label>
+            <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
+              Comparateur
+            </label>
             <select
               value={comparator}
               onChange={(e) => setComparator(e.target.value as Comparator)}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 appearance-none focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
             >
               {COMPARATORS.map((c) => (
                 <option key={c} value={c}>
@@ -221,80 +233,81 @@ export default function AddRulePage() {
             </select>
           </div>
 
-          {/* Target Value */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Target Value</label>
+            <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
+              Valeur cible
+            </label>
             <input
               type="number"
               value={targetValue}
               onChange={(e) => setTargetValue(e.target.value)}
               placeholder="0"
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
             />
           </div>
         </div>
 
         {/* Preview */}
         {previewLabel && (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5">
-            <p className="text-xs text-gray-600 mb-0.5">Preview</p>
-            <p className="text-sm">
-              <span className="text-emerald-400">{previewLabel}</span>{' '}
+          <div className="bg-[#0f172a] border border-[#334155] rounded-lg px-4 py-3">
+            <p className="text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1">
+              Aperçu
+            </p>
+            <p className="text-sm font-mono">
+              <span className="text-[#10b981]">{previewLabel}</span>{' '}
               {needsTeamScope && teamScope && (
-                <span className="text-purple-400">
+                <span className="text-[#a78bfa]">
                   ({TEAM_SCOPES.find((s) => s.value === teamScope)?.label}){' '}
                 </span>
               )}
-              <span className="text-amber-400">{COMPARATOR_LABELS[comparator]}</span>{' '}
-              <span className="text-blue-400">{targetValue || '…'}</span>
+              <span className="text-[#fbbf24]">{COMPARATOR_LABELS[comparator]}</span>{' '}
+              <span className="text-[#60a5fa]">{targetValue || '…'}</span>
             </p>
           </div>
         )}
 
-        {/* Advanced Mode toggle */}
-        <div className="flex items-center justify-between pt-2 border-t border-gray-800">
-          <span className="text-xs text-gray-500">Advanced Mode</span>
+        {/* Advanced Mode */}
+        <div className="flex items-center justify-between pt-2 border-t border-[#334155]">
+          <span className="text-xs text-[#475569] font-mono">Mode avancé</span>
           <div
             onClick={() => setAdvanced((a) => !a)}
             className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${
-              advanced ? 'bg-emerald-600' : 'bg-gray-700'
+              advanced ? 'bg-[#10b981]' : 'bg-[#334155]'
             }`}
           >
             <div
-              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                advanced ? 'translate-x-5' : 'translate-x-0'
+              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow transition-transform ${
+                advanced ? 'bg-[#0f172a] translate-x-5' : 'bg-[#64748b] translate-x-0'
               }`}
             />
           </div>
         </div>
 
         {advanced && (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
-            <p className="text-xs text-gray-500">
-              Time filters — available in Phase 4 (rule-engine)
+          <div className="bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2">
+            <p className="text-xs text-[#475569] font-mono">
+              Filtres temporels — disponible en Phase 4
             </p>
           </div>
         )}
 
-        {/* Save error */}
-        {saveError && <p className="text-red-400 text-xs">{saveError}</p>}
+        {saveError && <p className="text-[#f87171] text-xs font-mono">{saveError}</p>}
 
-        {/* Save button */}
         <button
           type="button"
           onClick={handleSave}
           disabled={!canSave || saving}
-          className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+          className="w-full bg-[#10b981] hover:bg-[#34d399] disabled:bg-[#334155] disabled:text-[#475569] text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.35)]"
         >
-          {saving ? 'Saving…' : 'Save Rule'}
+          {saving ? 'Enregistrement…' : 'Enregistrer la règle'}
         </button>
       </div>
 
       {/* ── Existing rules ─────────────────────────────────────────────── */}
       {rules.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-gray-800">
-          <p className="text-xs text-gray-500 mb-2">
-            Current Rules <span className="text-gray-700">({rules.length})</span>
+        <div className="mt-6 pt-5 border-t border-[#334155]">
+          <p className="text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-3">
+            Règles actuelles <span className="text-[#334155]">({rules.length})</span>
           </p>
           <div className="space-y-2">
             {rules.map((rule) => (
