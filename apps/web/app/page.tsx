@@ -265,7 +265,7 @@ export default function LandingPage() {
           <div className="animate-fade-up">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1e293b] bg-[#1e293b] text-xs text-[#94a3b8] font-mono tracking-wider mb-10">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse-slow inline-block" />
-              SCANNER LIVE • ALERTES TELEGRAM EN TEMPS RÉEL
+              FOOTBALL LIVE • ALERTES TELEGRAM EN TEMPS RÉEL
             </div>
 
             <h1
