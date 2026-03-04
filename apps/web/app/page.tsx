@@ -45,19 +45,19 @@ const LIVE_METRICS = [
 
 const BENEFITS = [
   {
-    kpi: '166+',
-    title: 'Métriques',
-    desc: "Buts, corners, tirs, xG, possession, forme récente — combinées pour des conditions d'entrée ultra-précises.",
+    kpi: '840+',
+    title: 'Signaux Live',
+    desc: 'Momentum, corners, tirs, possession, cotes en direct — capturés seconde par seconde sur chaque match en cours. Vous voyez ce que le score ne montre pas encore.',
     bars: [
       { label: 'IN_PLAY', pct: 78 },
       { label: 'PRÉ_MATCH', pct: 58 },
-      { label: 'COTES', pct: 32 },
+      { label: 'COTES LIVE', pct: 44 },
     ],
   },
   {
     kpi: '500+',
-    title: 'Matchs Live',
-    desc: 'Surveillance simultanée de tous les matchs en cours. Aucune opportunité ne passe inaperçue.',
+    title: 'Matchs en Direct',
+    desc: "MatchIQ scanne simultanément toute l'action mondiale 24h/24. Ce qui se passe sur le terrain, vous le savez en temps réel — pas après la mi-temps.",
     bars: [
       { label: 'EUROPE', pct: 88 },
       { label: 'AMÉRIQUES', pct: 65 },
@@ -66,8 +66,8 @@ const BENEFITS = [
   },
   {
     kpi: '<30s',
-    title: 'Délai Alerte',
-    desc: 'Notification Telegram avec score, métriques et contexte complet — en moins de 30 secondes.',
+    title: 'Alerte Instantanée',
+    desc: "Dès que vos conditions se réunissent en live, une alerte Telegram vous arrive avec score, métriques et timing exact. Avant que les cotes n'aient le temps de bouger.",
     bars: [
       { label: 'DÉTECTION', pct: 100 },
       { label: 'ANALYSE', pct: 97 },
@@ -79,34 +79,36 @@ const BENEFITS = [
 const STEPS = [
   {
     n: '01',
-    title: 'Définissez vos règles',
-    desc: "Construisez votre stratégie avec l'éditeur visuel. Choisissez métriques, seuils et conditions.",
-    chip: '"Buts ≥ 2.5 ET Corners ≥ 8 après 65\'"',
+    title: 'Programmez votre stratégie',
+    desc: "Définissez exactement ce que vous cherchez sur un match en direct — métriques live, cotes, timing. L'éditeur visuel combine vos conditions en quelques clics.",
+    chip: '"Corners ≥ 8 ET Possession ≥ 60% après 65\'"',
   },
   {
     n: '02',
-    title: 'On surveille tout',
-    desc: 'MatchIQ tourne 24h/24 et évalue votre stratégie sur chaque match en direct.',
-    chip: '512 ligues • mise à jour en temps réel',
+    title: 'Le live tourne pour vous',
+    desc: "MatchIQ scanne 500+ matchs en temps réel, non-stop. Dès que l'action sur le terrain correspond à votre stratégie, le moteur réagit.",
+    chip: '512 ligues • scan toutes les 15 secondes',
   },
   {
     n: '03',
-    title: 'Vous agissez',
-    desc: 'Recevez une alerte Telegram avec tous les détails au bon moment.',
-    chip: 'Délai < 30s • Score + métriques inclus',
+    title: 'Recevez. Agissez. Maintenant.',
+    desc: "Alerte Telegram instantanée avec score, métriques en direct et contexte complet. Vous êtes notifié dans l'action — pas après le coup.",
+    chip: 'Délai < 30s • Score + métriques live inclus',
   },
 ];
 
 const TESTIMONIALS = [
   {
-    quote: 'Fini la surveillance manuelle. Les alertes arrivent toujours au bon moment.',
+    quote:
+      "Avant je regardais les matchs en espérant repérer le bon moment. Maintenant l'alerte arrive sur mon téléphone pendant que je fais autre chose.",
     author: 'Thomas K.',
     role: 'Parieur professionnel • Paris',
     stat: '+41%',
-    statLabel: 'ROI',
+    statLabel: 'ROI live',
   },
   {
-    quote: 'La précision est incomparable. Je reçois des alertes avant même que les cotes bougent.',
+    quote:
+      "Les alertes live arrivent avant que les cotes n'aient eu le temps de bouger. C'est exactement ça, l'avantage du direct.",
     author: 'Alexandre M.',
     role: 'Trader sportif • Lyon',
     stat: '−3h',
@@ -114,7 +116,7 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "Aucun autre outil n'a la profondeur de MatchIQ. Les 166 métriques font toute la différence.",
+      "J'analyse 10x plus de matchs en live qu'avant, sans regarder chaque rencontre. MatchIQ fait le travail de surveillance à ma place.",
     author: 'Sarah L.',
     role: 'Analyste indépendante • Bordeaux',
     stat: '+34%',
@@ -155,19 +157,29 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Stats scroll trigger
+  // Stats trigger — démarre dès que la page est rendue (loading terminé, pas de session)
   useEffect(() => {
+    if (loading || session) return;
     const el = statsRef.current;
     if (!el) return;
+    const trigger = () => setStatsVisible(true);
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) setStatsVisible(true);
+        if (entry.isIntersecting) {
+          trigger();
+          observer.disconnect();
+        }
       },
-      { threshold: 0.35 },
+      { threshold: 0.1 },
     );
     observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    // Fallback : si la section est déjà visible ou l'observer ne tire pas
+    const fallback = setTimeout(trigger, 1200);
+    return () => {
+      observer.disconnect();
+      clearTimeout(fallback);
+    };
+  }, [loading, session]);
 
   const matchesCount = useCountUp(15420, 2000, statsVisible);
   const alertsCount = useCountUp(182543, 2200, statsVisible);
@@ -253,23 +265,23 @@ export default function LandingPage() {
           <div className="animate-fade-up">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1e293b] bg-[#1e293b] text-xs text-[#94a3b8] font-mono tracking-wider mb-10">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse-slow inline-block" />
-              ANALYTICS ENGINE • EN DIRECT
+              SCANNER LIVE • ALERTES TELEGRAM EN TEMPS RÉEL
             </div>
 
             <h1
               className="font-display leading-[0.88] tracking-wide text-white mb-8"
               style={{ fontSize: 'clamp(4rem, 9vw, 8rem)' }}
             >
-              ANALYSEZ
+              SAISISSEZ
               <br />
-              <span className="text-[#10b981]">AUTOMATISEZ</span>
+              <span className="text-[#10b981]">L&apos;INSTANT</span>
               <br />
-              PARIEZ
+              LIVE
             </h1>
 
             <p className="text-base text-[#94a3b8] max-w-sm mb-10 leading-relaxed">
-              MatchIQ surveille 166+ métriques en temps réel et déclenche vos stratégies au moment
-              exact où les conditions sont réunies.
+              MatchIQ scanne chaque match en direct et déclenche vos alertes Telegram au moment précis
+              où l&apos;action se passe — pas après le coup.
             </p>
 
             <div className="flex items-center gap-4 flex-wrap">
@@ -289,7 +301,7 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-10 flex items-center gap-6 flex-wrap">
-              {['Sans carte bancaire', '166+ métriques', 'Alertes < 30s'].map((t) => (
+              {['Sans carte bancaire', '500+ matchs live', 'Alertes < 30s'].map((t) => (
                 <div key={t} className="flex items-center gap-1.5 text-xs text-[#475569]">
                   <span className="text-[#10b981]">✓</span> {t}
                 </div>
@@ -468,9 +480,9 @@ export default function LandingPage() {
               className="font-display text-white mt-3 tracking-wide leading-none"
               style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
             >
-              VOTRE AVANTAGE
+              TOUT SE PASSE
               <br />
-              <span className="text-[#10b981]">ANALYTIQUE</span>
+              <span className="text-[#10b981]">EN DIRECT</span>
             </h2>
           </div>
 
@@ -524,9 +536,9 @@ export default function LandingPage() {
               className="font-display text-white mt-3 tracking-wide leading-none"
               style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
             >
-              COMMENT
+              AGISSEZ
               <br />
-              <span className="text-[#10b981]">ÇA MARCHE</span>
+              <span className="text-[#10b981]">EN TEMPS RÉEL</span>
             </h2>
           </div>
 
@@ -630,22 +642,23 @@ export default function LandingPage() {
         <div className="mx-auto max-w-4xl text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1e293b] bg-[#1e293b] text-xs text-[#94a3b8] font-mono tracking-wider mb-10">
             <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse-slow inline-block" />
-            ACCÈS IMMÉDIAT • SANS CARTE BANCAIRE
+            LIVE MAINTENANT • SANS CARTE BANCAIRE
           </div>
 
           <h2
             className="font-display text-white leading-[0.88] tracking-wide mb-8"
             style={{ fontSize: 'clamp(4rem, 12vw, 8.5rem)' }}
           >
-            PRÊT À
+            NE RATEZ
             <br />
-            <span className="text-[#10b981]">AUTOMATISER</span>
-            <br />?
+            <span className="text-[#10b981]">PLUS</span>
+            <br />
+            L&apos;ACTION
           </h2>
 
           <p className="text-base text-[#94a3b8] max-w-md mx-auto mb-12">
-            Rejoignez des centaines de parieurs qui ont transformé leur façon d&apos;analyser les
-            matchs.
+            Des centaines d&apos;opportunités se jouent en direct chaque jour. MatchIQ vous dit
+            laquelle saisir — au moment exact où elle se présente.
           </p>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
