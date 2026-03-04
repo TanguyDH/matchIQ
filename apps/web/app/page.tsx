@@ -280,8 +280,8 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-base text-[#94a3b8] max-w-sm mb-10 leading-relaxed">
-              MatchIQ scanne chaque match en direct et déclenche vos alertes Telegram au moment précis
-              où l&apos;action se passe — pas après le coup.
+              MatchIQ scanne chaque match en direct et déclenche vos alertes Telegram au moment
+              précis où l&apos;action se passe — pas après le coup.
             </p>
 
             <div className="flex items-center gap-4 flex-wrap">
