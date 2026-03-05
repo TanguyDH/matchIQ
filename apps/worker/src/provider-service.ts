@@ -198,7 +198,7 @@ const LEAGUE_COUNTRY_MAP: Record<number, string> = {
   // Germany
   82: 'DE', // Bundesliga
   // Italy
-  384: 'IT', // Serie A
+  207: 'IT', // Serie A
   // France
   301: 'FR', // Ligue 1
   // Portugal
