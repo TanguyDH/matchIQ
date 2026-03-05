@@ -206,7 +206,7 @@ const LEAGUE_COUNTRY_MAP: Record<number, string> = {
   // Netherlands
   72: 'NL', // Eredivisie
   // Belgium
-  384: 'BE', // Pro League
+  1399: 'BE', // Pro League
   // Add more as needed...
 };
 
@@ -395,7 +395,7 @@ export class ProviderService {
         return [];
       }
 
-      const json = await response.json();
+      const json = await response.json() as any;
       const allFixtures = json.data || [];
 
       // Filter for completed matches (state_id === 5) and take first 10 (for L10 metrics)
@@ -426,7 +426,7 @@ export class ProviderService {
         return [];
       }
 
-      const json = await response.json();
+      const json = await response.json() as any;
       const allFixtures = json.data || [];
 
       // Filter for completed matches and take first 5
@@ -588,8 +588,9 @@ export class ProviderService {
     const awayScore = awayScoreObj?.score?.goals ?? (awayScoreObj as any)?.goals ?? 0;
 
     // Get current minute using shared timer utility
-    const minute = periods.length > 0
-      ? calculateMatchMinute(periods)
+    const validPeriods = periods.filter((p): p is NonNullable<typeof p> => p != null);
+    const minute = validPeriods.length > 0
+      ? calculateMatchMinute(validPeriods as any)
       : ((state as any).minute ?? 0); // Fallback to state.minute for mocks
 
     // Extract IN_PLAY metrics from statistics

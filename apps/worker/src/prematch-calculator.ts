@@ -2263,9 +2263,9 @@ function calculateTeamMetrics(fixtures: any[], teamId: number): TeamPreMatchMetr
     avg_goals_conceded_l10 = parseFloat((totalGoalsConcededL10 / countL10).toFixed(2));
 
     // Win/Draw/Loss percentages
-    const winsL10 = matchScoresL10.filter(m => m.result === 'win').length;
-    const drawsL10 = matchScoresL10.filter(m => m.result === 'draw').length;
-    const lossesL10 = matchScoresL10.filter(m => m.result === 'loss').length;
+    const winsL10 = matchScoresL10.filter(m => m.isWin).length;
+    const drawsL10 = matchScoresL10.filter(m => m.isDraw).length;
+    const lossesL10 = matchScoresL10.filter(m => m.isLoss).length;
 
     win_pct_l10 = parseFloat(((winsL10 / countL10) * 100).toFixed(2));
     draw_pct_l10 = parseFloat(((drawsL10 / countL10) * 100).toFixed(2));
@@ -2274,7 +2274,7 @@ function calculateTeamMetrics(fixtures: any[], teamId: number): TeamPreMatchMetr
     // BTTS, Clean Sheets, Failed to Score
     const bttsL10 = matchScoresL10.filter(m => m.btts).length;
     const cleanSheetsL10 = matchScoresL10.filter(m => m.cleanSheet).length;
-    const failedToScoreL10 = matchScoresL10.filter(m => m.failedToScore).length;
+    const failedToScoreL10 = matchScoresL10.filter(m => m.goalsScored === 0).length;
 
     btts_pct_l10 = parseFloat(((bttsL10 / countL10) * 100).toFixed(2));
     clean_sheet_pct_l10 = parseFloat(((cleanSheetsL10 / countL10) * 100).toFixed(2));
@@ -2294,29 +2294,29 @@ function calculateTeamMetrics(fixtures: any[], teamId: number): TeamPreMatchMetr
     over_4_5_match_goals_pct_l10 = parseFloat(((over45L10 / countL10) * 100).toFixed(2));
 
     // Half-time metrics
-    const total1hGoalsL10 = matchScoresL10.reduce((sum, m) => sum + (m.firstHalfGoalsScored + m.firstHalfGoalsConceded), 0);
-    const total1hGoalsScoredL10 = matchScoresL10.reduce((sum, m) => sum + m.firstHalfGoalsScored, 0);
-    const total1hGoalsConcededL10 = matchScoresL10.reduce((sum, m) => sum + m.firstHalfGoalsConceded, 0);
+    const total1hGoalsL10 = matchScoresL10.reduce((sum, m) => sum + (m.htGoalsScored + m.htGoalsConceded), 0);
+    const total1hGoalsScoredL10 = matchScoresL10.reduce((sum, m) => sum + m.htGoalsScored, 0);
+    const total1hGoalsConcededL10 = matchScoresL10.reduce((sum, m) => sum + m.htGoalsConceded, 0);
 
     avg_1h_goals_l10 = parseFloat((total1hGoalsL10 / countL10).toFixed(2));
     avg_1h_goals_scored_l10 = parseFloat((total1hGoalsScoredL10 / countL10).toFixed(2));
     avg_1h_goals_conceded_l10 = parseFloat((total1hGoalsConcededL10 / countL10).toFixed(2));
 
-    const htWinsL10 = matchScoresL10.filter(m => m.firstHalfGoalsScored > m.firstHalfGoalsConceded).length;
-    const htDrawsL10 = matchScoresL10.filter(m => m.firstHalfGoalsScored === m.firstHalfGoalsConceded).length;
-    const htLossesL10 = matchScoresL10.filter(m => m.firstHalfGoalsScored < m.firstHalfGoalsConceded).length;
-    const htBttsL10 = matchScoresL10.filter(m => m.firstHalfGoalsScored > 0 && m.firstHalfGoalsConceded > 0).length;
+    const htWinsL10 = matchScoresL10.filter(m => m.htGoalsScored > m.htGoalsConceded).length;
+    const htDrawsL10 = matchScoresL10.filter(m => m.htGoalsScored === m.htGoalsConceded).length;
+    const htLossesL10 = matchScoresL10.filter(m => m.htGoalsScored < m.htGoalsConceded).length;
+    const htBttsL10 = matchScoresL10.filter(m => m.htGoalsScored > 0 && m.htGoalsConceded > 0).length;
 
     ht_win_pct_l10 = parseFloat(((htWinsL10 / countL10) * 100).toFixed(2));
     ht_draw_pct_l10 = parseFloat(((htDrawsL10 / countL10) * 100).toFixed(2));
     ht_loss_pct_l10 = parseFloat(((htLossesL10 / countL10) * 100).toFixed(2));
     ht_btts_pct_l10 = parseFloat(((htBttsL10 / countL10) * 100).toFixed(2));
 
-    const htOver05L10 = matchScoresL10.filter(m => (m.firstHalfGoalsScored + m.firstHalfGoalsConceded) >= 0.5).length;
-    const htOver15L10 = matchScoresL10.filter(m => (m.firstHalfGoalsScored + m.firstHalfGoalsConceded) >= 1.5).length;
-    const htOver25L10 = matchScoresL10.filter(m => (m.firstHalfGoalsScored + m.firstHalfGoalsConceded) >= 2.5).length;
-    const htOver35L10 = matchScoresL10.filter(m => (m.firstHalfGoalsScored + m.firstHalfGoalsConceded) >= 3.5).length;
-    const htOver45L10 = matchScoresL10.filter(m => (m.firstHalfGoalsScored + m.firstHalfGoalsConceded) >= 4.5).length;
+    const htOver05L10 = matchScoresL10.filter(m => (m.htGoalsScored + m.htGoalsConceded) >= 0.5).length;
+    const htOver15L10 = matchScoresL10.filter(m => (m.htGoalsScored + m.htGoalsConceded) >= 1.5).length;
+    const htOver25L10 = matchScoresL10.filter(m => (m.htGoalsScored + m.htGoalsConceded) >= 2.5).length;
+    const htOver35L10 = matchScoresL10.filter(m => (m.htGoalsScored + m.htGoalsConceded) >= 3.5).length;
+    const htOver45L10 = matchScoresL10.filter(m => (m.htGoalsScored + m.htGoalsConceded) >= 4.5).length;
 
     over_0_5_ht_goals_pct_l10 = parseFloat(((htOver05L10 / countL10) * 100).toFixed(2));
     over_1_5_ht_goals_pct_l10 = parseFloat(((htOver15L10 / countL10) * 100).toFixed(2));
@@ -2456,9 +2456,9 @@ function calculateTeamMetrics(fixtures: any[], teamId: number): TeamPreMatchMetr
       avg_goals_conceded_l10h = parseFloat((totalGoalsConcededH / countH).toFixed(2));
 
       // Results
-      const winsH = homeMatchesL10.filter(m => m.result === 'win').length;
-      const drawsH = homeMatchesL10.filter(m => m.result === 'draw').length;
-      const lossesH = homeMatchesL10.filter(m => m.result === 'loss').length;
+      const winsH = homeMatchesL10.filter(m => m.isWin).length;
+      const drawsH = homeMatchesL10.filter(m => m.isDraw).length;
+      const lossesH = homeMatchesL10.filter(m => m.isLoss).length;
 
       win_pct_l10h = parseFloat(((winsH / countH) * 100).toFixed(2));
       draw_pct_l10h = parseFloat(((drawsH / countH) * 100).toFixed(2));
@@ -2467,7 +2467,7 @@ function calculateTeamMetrics(fixtures: any[], teamId: number): TeamPreMatchMetr
       // BTTS, Clean Sheets, Failed to Score
       const bttsH = homeMatchesL10.filter(m => m.btts).length;
       const cleanSheetsH = homeMatchesL10.filter(m => m.cleanSheet).length;
-      const failedToScoreH = homeMatchesL10.filter(m => m.failedToScore).length;
+      const failedToScoreH = homeMatchesL10.filter(m => m.goalsScored === 0).length;
 
       btts_pct_l10h = parseFloat(((bttsH / countH) * 100).toFixed(2));
       clean_sheet_pct_l10h = parseFloat(((cleanSheetsH / countH) * 100).toFixed(2));
@@ -2628,9 +2628,9 @@ function calculateTeamMetrics(fixtures: any[], teamId: number): TeamPreMatchMetr
       avg_goals_conceded_l10a = parseFloat((totalGoalsConcededA / countA).toFixed(2));
 
       // Results
-      const winsA = awayMatchesL10.filter(m => m.result === 'win').length;
-      const drawsA = awayMatchesL10.filter(m => m.result === 'draw').length;
-      const lossesA = awayMatchesL10.filter(m => m.result === 'loss').length;
+      const winsA = awayMatchesL10.filter(m => m.isWin).length;
+      const drawsA = awayMatchesL10.filter(m => m.isDraw).length;
+      const lossesA = awayMatchesL10.filter(m => m.isLoss).length;
 
       win_pct_l10a = parseFloat(((winsA / countA) * 100).toFixed(2));
       draw_pct_l10a = parseFloat(((drawsA / countA) * 100).toFixed(2));
@@ -2639,7 +2639,7 @@ function calculateTeamMetrics(fixtures: any[], teamId: number): TeamPreMatchMetr
       // BTTS, Clean Sheets, Failed to Score
       const bttsA = awayMatchesL10.filter(m => m.btts).length;
       const cleanSheetsA = awayMatchesL10.filter(m => m.cleanSheet).length;
-      const failedToScoreA = awayMatchesL10.filter(m => m.failedToScore).length;
+      const failedToScoreA = awayMatchesL10.filter(m => m.goalsScored === 0).length;
 
       btts_pct_l10a = parseFloat(((bttsA / countA) * 100).toFixed(2));
       clean_sheet_pct_l10a = parseFloat(((cleanSheetsA / countA) * 100).toFixed(2));

@@ -40,7 +40,7 @@ async function fetchStandingsForSeason(seasonId: number): Promise<Standing[]> {
       return [];
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
 
     // SportMonks returns standings in data array
     // Each standing has: team_id, position, points, played, won, draw, lost
