@@ -32,7 +32,9 @@ export default function CreateStrategyPage() {
         name: name.trim(),
         alert_type: alertType,
         ...(desiredOutcome ? { desired_outcome: desiredOutcome } : {}),
-        ...(defaultLeagueIds && defaultLeagueIds.length > 0 ? { league_ids: defaultLeagueIds } : {}),
+        ...(defaultLeagueIds && defaultLeagueIds.length > 0
+          ? { league_ids: defaultLeagueIds }
+          : {}),
       });
       router.push(`/strategies/${strategy.id}/rules/add`);
     } catch (e) {

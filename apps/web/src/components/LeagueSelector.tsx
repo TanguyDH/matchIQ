@@ -10,12 +10,73 @@ interface League {
 }
 
 const FLAG_MAP: Record<string, string> = {
-  GB: '🇬🇧', ES: '🇪🇸', DE: '🇩🇪', IT: '🇮🇹', FR: '🇫🇷',
-  PT: '🇵🇹', NL: '🇳🇱', BE: '🇧🇪', TR: '🇹🇷', RU: '🇷🇺',
-  BR: '🇧🇷', AR: '🇦🇷', US: '🇺🇸', MX: '🇲🇽', JP: '🇯🇵',
-  SA: '🇸🇦', GR: '🇬🇷', SE: '🇸🇪', NO: '🇳🇴', DK: '🇩🇰',
-  CH: '🇨🇭', AT: '🇦🇹', PL: '🇵🇱', CZ: '🇨🇿', HR: '🇭🇷',
+  GB: '🇬🇧',
+  EN: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
   SC: '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  ES: '🇪🇸',
+  DE: '🇩🇪',
+  IT: '🇮🇹',
+  FR: '🇫🇷',
+  PT: '🇵🇹',
+  NL: '🇳🇱',
+  BE: '🇧🇪',
+  TR: '🇹🇷',
+  RU: '🇷🇺',
+  BR: '🇧🇷',
+  AR: '🇦🇷',
+  US: '🇺🇸',
+  MX: '🇲🇽',
+  JP: '🇯🇵',
+  SA: '🇸🇦',
+  GR: '🇬🇷',
+  SE: '🇸🇪',
+  NO: '🇳🇴',
+  DK: '🇩🇰',
+  CH: '🇨🇭',
+  AT: '🇦🇹',
+  PL: '🇵🇱',
+  CZ: '🇨🇿',
+  HR: '🇭🇷',
+  FI: '🇫🇮',
+  RO: '🇷🇴',
+  RS: '🇷🇸',
+  HU: '🇭🇺',
+  UA: '🇺🇦',
+  BG: '🇧🇬',
+  SK: '🇸🇰',
+  SI: '🇸🇮',
+  BA: '🇧🇦',
+  AL: '🇦🇱',
+  MK: '🇲🇰',
+  ME: '🇲🇪',
+  IE: '🇮🇪',
+  IL: '🇮🇱',
+  EE: '🇪🇪',
+  LV: '🇱🇻',
+  LT: '🇱🇹',
+  GE: '🇬🇪',
+  AZ: '🇦🇿',
+  AM: '🇦🇲',
+  KZ: '🇰🇿',
+  CY: '🇨🇾',
+  LU: '🇱🇺',
+  MT: '🇲🇹',
+  IS: '🇮🇸',
+  BY: '🇧🇾',
+  MD: '🇲🇩',
+  KO: '🇽🇰',
+  CN: '🇨🇳',
+  KR: '🇰🇷',
+  AU: '🇦🇺',
+  ZA: '🇿🇦',
+  NG: '🇳🇬',
+  EG: '🇪🇬',
+  MA: '🇲🇦',
+  CO: '🇨🇴',
+  CL: '🇨🇱',
+  UY: '🇺🇾',
+  PE: '🇵🇪',
+  EC: '🇪🇨',
 };
 
 interface Props {
@@ -62,7 +123,10 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <h2 className="text-sm font-semibold text-[#f1f5f9]">Sélectionner les ligues</h2>
-          <button onClick={onClose} className="text-[#475569] hover:text-[#f1f5f9] transition-colors text-lg">
+          <button
+            onClick={onClose}
+            className="text-[#475569] hover:text-[#f1f5f9] transition-colors text-lg"
+          >
             ×
           </button>
         </div>
@@ -82,7 +146,9 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
         {/* Selected count */}
         {selected.size > 0 && (
           <div className="px-5 pb-2 flex items-center justify-between">
-            <span className="text-xs text-[#10b981] font-mono">{selected.size} sélectionnée{selected.size > 1 ? 's' : ''}</span>
+            <span className="text-xs text-[#10b981] font-mono">
+              {selected.size} sélectionnée{selected.size > 1 ? 's' : ''}
+            </span>
             <button
               onClick={() => setSelected(new Set())}
               className="text-xs text-[#475569] hover:text-[#f87171] transition-colors"
@@ -114,9 +180,7 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
                 >
                   <span className="text-base w-5 text-center">{flag}</span>
                   <span className="text-sm flex-1">{league.name}</span>
-                  {isSelected && (
-                    <span className="text-[#10b981] text-xs">✓</span>
-                  )}
+                  {isSelected && <span className="text-[#10b981] text-xs">✓</span>}
                 </button>
               );
             })
