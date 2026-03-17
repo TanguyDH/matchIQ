@@ -39,6 +39,18 @@ export interface Strategy {
   league_ids?: number[] | null;
 }
 
+// ─── Time filter ──────────────────────────────────────────────────────────────
+
+export type TimeFilter =
+  | { mode: 'off' }
+  | { mode: 'as_of_minute'; x: number }
+  | { mode: 'x_minutes_ago'; x: number }
+  | { mode: 'between'; x: number; y: number }
+  | { mode: 'past_x'; x: number }
+  | { mode: 'since_minute'; x: number }
+  | { mode: 'during_2nd_half' }
+  | { mode: 'as_of_halftime' };
+
 export interface Rule {
   id: string;
   strategy_id: string;
@@ -47,7 +59,7 @@ export interface Rule {
   comparator: Comparator;
   value: number;
   team_scope: TeamScope | null;
-  time_filter: Record<string, unknown> | null;
+  time_filter: TimeFilter | null;
   created_at: string;
 }
 
@@ -166,7 +178,7 @@ export interface CreateRulePayload {
   comparator: Comparator;
   value: number;
   team_scope?: TeamScope;
-  time_filter?: Record<string, unknown>;
+  time_filter?: TimeFilter;
 }
 
 // ─── Comparator display ───────────────────────────────────────────────────────

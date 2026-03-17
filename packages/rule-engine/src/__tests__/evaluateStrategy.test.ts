@@ -46,6 +46,7 @@ function createMockMatch(overrides: Partial<MatchSnapshot> = {}): MatchSnapshot 
     awayScore: 0,
     minute: 45,
     isLive: true,
+    isHalftime: false,
     inPlay: {
       home_goals: 2,
       away_goals: 1,

@@ -109,6 +109,39 @@ export async function getStatsAtMinute(
 }
 
 /**
+ * Returns the delta of each stat column between two minutes.
+ * delta = value at toMinute - value at fromMinute (cumulative stats).
+ * Returns null if either boundary row is missing.
+ */
+export async function getStatsDeltaBetween(
+  matchId: string,
+  fromMinute: number,
+  toMinute: number,
+): Promise<Record<string, number | null> | null> {
+  if (fromMinute < 0 || toMinute < fromMinute) return null;
+
+  const [from, to] = await Promise.all([
+    getStatsAtMinute(matchId, fromMinute),
+    getStatsAtMinute(matchId, toMinute),
+  ]);
+
+  if (!from || !to) return null;
+
+  const delta: Record<string, number | null> = {};
+  for (const key of Object.keys(to)) {
+    if (key === 'match_id' || key === 'minute' || key === 'captured_at') continue;
+    const toVal = to[key];
+    const fromVal = from[key];
+    if (typeof toVal === 'number' && typeof fromVal === 'number') {
+      delta[key] = toVal - fromVal;
+    } else {
+      delta[key] = null;
+    }
+  }
+  return delta;
+}
+
+/**
  * Cleanup: deletes rows older than the given number of days.
  */
 export async function cleanupOldStats(olderThanDays = 14): Promise<void> {

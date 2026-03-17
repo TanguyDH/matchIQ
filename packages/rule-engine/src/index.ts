@@ -13,6 +13,7 @@ import { extractInPlayMetric, extractPreMatchMetric } from './metrics-logic';
 
 // Export for testing and external use
 export { extractInPlayMetric, extractPreMatchMetric } from './metrics-logic';
+export { extractWithTeamScope };
 
 /**
  * Evaluates a strategy against a match snapshot.
@@ -25,12 +26,13 @@ export { extractInPlayMetric, extractPreMatchMetric } from './metrics-logic';
 export function evaluateStrategy(
   strategy: StrategyWithRules,
   match: MatchSnapshot,
+  timeFilteredValues?: Map<string, number>,
 ): EvaluationResult {
   const matchedRules: EvaluationResult['matchedRules'] = [];
 
   // AND logic: all rules must pass
   for (const rule of strategy.rules) {
-    const actual = extractMetricValue(rule, match);
+    const actual = extractMetricValue(rule, match, timeFilteredValues);
 
     // If we can't extract the value, the rule fails
     if (actual === null) {
@@ -76,9 +78,21 @@ export function evaluateStrategy(
  * @param match - The match snapshot
  * @returns The extracted value, or null if not found
  */
-function extractMetricValue(rule: Rule, match: MatchSnapshot): number | null {
+function extractMetricValue(
+  rule: Rule,
+  match: MatchSnapshot,
+  timeFilteredValues?: Map<string, number>,
+): number | null {
   // Use dedicated logic for IN_PLAY metrics
   if (rule.value_type === 'IN_PLAY') {
+    // If a time_filter is active, use the pre-computed value from the scanner
+    if (rule.time_filter && rule.time_filter.mode !== 'off') {
+      if (timeFilteredValues?.has(rule.id)) {
+        return timeFilteredValues.get(rule.id)!;
+      }
+      // time_filter configured but no pre-computed value available → fail
+      return null;
+    }
     return extractInPlayMetric(rule, match);
   }
 
@@ -89,6 +103,15 @@ function extractMetricValue(rule: Rule, match: MatchSnapshot): number | null {
 
   // Fallback for ODDS (generic extraction)
   if (rule.value_type === 'ODDS') {
+    // If a time_filter is active, use the pre-computed value from the scanner
+    if (rule.time_filter && rule.time_filter.mode !== 'off') {
+      if (timeFilteredValues?.has(rule.id)) {
+        return timeFilteredValues.get(rule.id)!;
+      }
+      // time_filter configured but no pre-computed value available → fail
+      return null;
+    }
+
     const dataSource = match.odds;
 
     // If no team scope, return the metric value directly
