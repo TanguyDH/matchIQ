@@ -1,51 +1,102 @@
 import { supabase } from './supabase';
 import type { MatchSnapshot } from '@matchiq/shared-types';
 
+// Maps inPlay keys (prefixed with home_/away_) to DB column names
+const STAT_KEYS = [
+  'shots_total',
+  'shots_on_target',
+  'shots_off_target',
+  'shots_inside_box',
+  'shots_outside_box',
+  'shots_blocked',
+  'goal_attempts',
+  'corners',
+  'yellow_cards',
+  'red_cards',
+  'possession',
+  'passes_total',
+  'passes_accurate',
+  'passes_percentage',
+  'long_passes',
+  'long_passes_accurate',
+  'long_passes_percentage',
+  'key_passes',
+  'attacks',
+  'dangerous_attacks',
+  'counter_attacks',
+  'big_chances',
+  'big_chances_missed',
+  'fouls',
+  'offsides',
+  'free_kicks',
+  'saves',
+  'tackles',
+  'interceptions',
+  'successful_headers',
+  'successful_dribbles',
+  'dribbles_percentage',
+  'crosses',
+  'crosses_accurate',
+  'assists',
+  'ball_safe',
+] as const;
+
+type StatKey = (typeof STAT_KEYS)[number];
+
+type TimelineRow = {
+  match_id: string;
+  minute: number;
+  home_score: number;
+  away_score: number;
+  captured_at: string;
+} & Partial<Record<`home_${StatKey}` | `away_${StatKey}`, number>>;
+
 /**
- * Upserts the full inPlay stats for a live match at its current minute.
- * Called every scan cycle for every live fixture.
- * One row per (match_id, minute) — last scan at each minute wins.
+ * Upserts all live stats for a match at its current minute.
+ * Called every scan cycle (~30s). One row per (match_id, minute).
  */
 export async function upsertMatchStats(match: MatchSnapshot): Promise<void> {
   const minute = match.minute;
   if (minute < 0) return;
 
-  const { error } = await supabase.from('match_stats_timeline').upsert(
-    {
-      match_id: match.id,
-      minute,
-      home_score: match.homeScore,
-      away_score: match.awayScore,
-      inplay: match.inPlay,
-      captured_at: new Date().toISOString(),
-    },
-    { onConflict: 'match_id,minute' },
-  );
+  const row: TimelineRow = {
+    match_id: match.id,
+    minute,
+    home_score: match.homeScore,
+    away_score: match.awayScore,
+    captured_at: new Date().toISOString(),
+  };
+
+  for (const key of STAT_KEYS) {
+    const homeVal = match.inPlay[`home_${key}`];
+    const awayVal = match.inPlay[`away_${key}`];
+    if (homeVal !== undefined) row[`home_${key}`] = homeVal;
+    if (awayVal !== undefined) row[`away_${key}`] = awayVal;
+  }
+
+  const { error } = await supabase
+    .from('match_stats_timeline')
+    .upsert(row as any, { onConflict: 'match_id,minute' });
 
   if (error) {
     console.error(
-      `[StatsTimeline] Failed to upsert stats for match ${match.id} at minute ${minute}:`,
+      `[StatsTimeline] Failed to upsert match ${match.id} at minute ${minute}:`,
       error,
     );
   }
 }
 
 /**
- * Returns the stats snapshot closest to (and at or before) the given minute.
- * Used by the resolver to get 1st-half stats (query minute ≤ 45).
+ * Returns the stats row closest to (and at or before) the given minute.
+ * Used by the resolver to get 1st-half stats (maxMinute = 45).
  */
 export async function getStatsAtMinute(
   matchId: string,
   maxMinute: number,
-): Promise<{
-  minute: number;
-  homeScore: number;
-  awayScore: number;
-  stats: Record<string, number>;
-} | null> {
+): Promise<Record<string, number | null> | null> {
   const { data, error } = await supabase
     .from('match_stats_timeline')
-    .select('minute, home_score, away_score, inplay')
+    .select('*')
     .eq('match_id', matchId)
     .lte('minute', maxMinute)
     .order('minute', { ascending: false })
@@ -54,17 +105,11 @@ export async function getStatsAtMinute(
 
   if (error || !data) return null;
 
-  return {
-    minute: data.minute,
-    homeScore: data.home_score,
-    awayScore: data.away_score,
-    stats: (data.inplay as Record<string, number>) ?? {},
-  };
+  return data as Record<string, number | null>;
 }
 
 /**
- * Cleanup: deletes timeline rows older than the given number of days.
- * Call periodically (e.g. once a day) to keep the table small.
+ * Cleanup: deletes rows older than the given number of days.
  */
 export async function cleanupOldStats(olderThanDays = 14): Promise<void> {
   const cutoff = new Date();
@@ -78,6 +123,8 @@ export async function cleanupOldStats(olderThanDays = 14): Promise<void> {
   if (error) {
     console.error('[StatsTimeline] Cleanup failed:', error);
   } else {
-    console.log(`[StatsTimeline] Deleted ${count ?? 0} rows older than ${olderThanDays} days`);
+    console.log(
+      `[StatsTimeline] Deleted ${count ?? 0} rows older than ${olderThanDays} days`,
+    );
   }
 }

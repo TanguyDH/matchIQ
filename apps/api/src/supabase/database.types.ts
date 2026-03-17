@@ -158,22 +158,22 @@ export interface Database {
           minute: number;
           home_score: number;
           away_score: number;
-          inplay: Record<string, number>;
           captured_at: string;
+          [col: string]: number | string | null;
         };
         Insert: {
           match_id: string;
           minute: number;
           home_score: number;
           away_score: number;
-          inplay: Record<string, number>;
           captured_at?: string;
+          [col: string]: number | string | null | undefined;
         };
         Update: {
           home_score?: number;
           away_score?: number;
-          inplay?: Record<string, number>;
           captured_at?: string;
+          [col: string]: number | string | null | undefined;
         };
         Relationships: [];
       };

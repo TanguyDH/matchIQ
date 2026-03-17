@@ -246,28 +246,19 @@ export async function resolveFinishedMatches(): Promise<void> {
     // 1H stats from timeline: last snapshot at or before minute 45
     const htStats = await getStatsAtMinute(matchId, 45);
     const cornersHomeHT =
-      htStats?.stats['home_corners'] != null
-        ? Math.round(htStats.stats['home_corners'])
-        : null;
+      htStats?.home_corners != null ? (htStats.home_corners as number) : null;
     const cornersAwayHT =
-      htStats?.stats['away_corners'] != null
-        ? Math.round(htStats.stats['away_corners'])
-        : null;
+      htStats?.away_corners != null ? (htStats.away_corners as number) : null;
 
-    // 1H cards from timeline (overrides event-based count if available)
     const cardsHomeHTFromTimeline =
-      htStats?.stats['home_yellow_cards'] != null
-        ? Math.round(
-            (htStats.stats['home_yellow_cards'] ?? 0) +
-              (htStats.stats['home_red_cards'] ?? 0),
-          )
+      htStats?.home_yellow_cards != null
+        ? ((htStats.home_yellow_cards as number) ?? 0) +
+          ((htStats.home_red_cards as number) ?? 0)
         : null;
     const cardsAwayHTFromTimeline =
-      htStats?.stats['away_yellow_cards'] != null
-        ? Math.round(
-            (htStats.stats['away_yellow_cards'] ?? 0) +
-              (htStats.stats['away_red_cards'] ?? 0),
-          )
+      htStats?.away_yellow_cards != null
+        ? ((htStats.away_yellow_cards as number) ?? 0) +
+          ((htStats.away_red_cards as number) ?? 0)
         : null;
 
     console.log(
