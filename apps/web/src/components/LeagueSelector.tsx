@@ -101,9 +101,7 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
     });
   }, [token]);
 
-  const filtered = leagues.filter((l) =>
-    l.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = leagues.filter((l) => l.name.toLowerCase().includes(search.toLowerCase()));
 
   const toggle = (id: number) => {
     setSelected((prev) => {
