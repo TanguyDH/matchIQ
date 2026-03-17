@@ -125,6 +125,18 @@ async function loadActiveStrategies(): Promise<StrategyWithRules[]> {
     return [];
   }
 
+  // Batch-load telegram chat_ids for all unique user_ids
+  const userIds = [...new Set(strategies.map((s) => s.user_id as string))];
+  const { data: telegramRows } = await supabase
+    .from('user_telegram')
+    .select('user_id, chat_id')
+    .in('user_id', userIds);
+
+  const chatIdByUser: Record<string, string> = {};
+  for (const row of telegramRows ?? []) {
+    if (row.chat_id) chatIdByUser[row.user_id as string] = row.chat_id as string;
+  }
+
   // Load rules for all strategies
   const strategiesWithRules: StrategyWithRules[] = [];
   for (const strategy of strategies) {
@@ -144,6 +156,7 @@ async function loadActiveStrategies(): Promise<StrategyWithRules[]> {
     strategiesWithRules.push({
       ...(strategy as Strategy),
       rules: (rules as Rule[]) || [],
+      telegramChatId: chatIdByUser[strategy.user_id as string],
     });
   }
 
@@ -203,6 +216,7 @@ async function evaluateAndTrigger(
       strategyName: strategy.name,
       match,
       result,
+      telegramChatId: (strategy as StrategyWithRules & { telegramChatId?: string }).telegramChatId,
     });
 
     // Update performance stats

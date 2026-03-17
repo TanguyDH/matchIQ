@@ -18,11 +18,19 @@ export async function sendAlert(
   strategyName: string,
   match: MatchSnapshot,
   result: EvaluationResult,
+  chatId?: string,
 ): Promise<void> {
+  const targetChatId = chatId ?? config.telegram.chatId;
+
+  if (!targetChatId) {
+    console.warn(`[Telegram] No chat_id for strategy "${strategyName}" — alert skipped`);
+    return;
+  }
+
   try {
     const message = formatAlertMessage(strategyName, match, result);
 
-    await bot.sendMessage(config.telegram.chatId, message, {
+    await bot.sendMessage(targetChatId, message, {
       parse_mode: 'Markdown',
     });
 

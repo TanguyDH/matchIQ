@@ -47,4 +47,13 @@ export const api = {
 
   deleteRule: (token: string | null, ruleId: string) =>
     request<void>(`/rules/${ruleId}`, token, { method: 'DELETE' }),
+
+  getTelegramLinkUrl: (token: string | null) =>
+    request<{ url: string }>('/telegram/link-url', token),
+
+  getTelegramStatus: (token: string | null) =>
+    request<{ linked: boolean; linkedAt?: string }>('/telegram/status', token),
+
+  disconnectTelegram: (token: string | null) =>
+    request<void>('/telegram/disconnect', token, { method: 'DELETE' }),
 };

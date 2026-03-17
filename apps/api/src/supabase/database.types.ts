@@ -99,6 +99,31 @@ export interface Database {
         Relationships: [];
       };
 
+      user_telegram: {
+        Row: {
+          user_id: string;
+          chat_id: string | null;
+          link_token: string | null;
+          link_token_expires_at: string | null;
+          linked_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          chat_id?: string | null;
+          link_token?: string | null;
+          link_token_expires_at?: string | null;
+          linked_at?: string | null;
+        };
+        Update: {
+          chat_id?: string | null;
+          link_token?: string | null;
+          link_token_expires_at?: string | null;
+          linked_at?: string | null;
+        };
+        Relationships: [];
+      };
+
       // triggers & performance are read-only from the API's perspective;
       // the worker writes them via the service-role key.
     };

@@ -6,6 +6,8 @@ const schema = z.object({
   SUPABASE_ANON_KEY: z.string(),
   SUPABASE_SERVICE_ROLE_KEY: z.string(),
   SUPABASE_JWT_SECRET: z.string(),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_BOT_USERNAME: z.string().optional(),
 });
 
 export type AppEnv = z.infer<typeof schema>;

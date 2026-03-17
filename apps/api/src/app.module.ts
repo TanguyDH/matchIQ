@@ -6,9 +6,10 @@ import { RulesModule } from './rules/rules.module';
 import { StrategiesModule } from './strategies/strategies.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { LiveMatchesModule } from './live-matches/live-matches.module';
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
-  imports: [SupabaseModule, StrategiesModule, RulesModule, LiveMatchesModule],
+  imports: [SupabaseModule, StrategiesModule, RulesModule, LiveMatchesModule, TelegramModule],
   controllers: [AppController],
   providers: [AppService],
 })

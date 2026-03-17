@@ -44,12 +44,24 @@ export default function NavBar() {
           </div>
         </div>
 
-        <button
-          onClick={() => supabase.auth.signOut()}
-          className="text-xs text-[#475569] hover:text-[#f1f5f9] transition-colors"
-        >
-          Déconnexion
-        </button>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/settings"
+            className={`text-sm transition-colors ${
+              pathname === '/settings'
+                ? 'text-[#10b981] font-medium'
+                : 'text-[#475569] hover:text-[#f1f5f9]'
+            }`}
+          >
+            Paramètres
+          </Link>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="text-xs text-[#475569] hover:text-[#f1f5f9] transition-colors"
+          >
+            Déconnexion
+          </button>
+        </div>
       </div>
     </nav>
   );

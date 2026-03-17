@@ -14,7 +14,7 @@ export const config = {
   },
   telegram: {
     botToken: requireEnv('TELEGRAM_BOT_TOKEN'),
-    chatId: requireEnv('TELEGRAM_CHAT_ID'),
+    chatId: process.env.TELEGRAM_CHAT_ID ?? '',
   },
   redis: {
     host: process.env.REDIS_HOST || 'localhost',

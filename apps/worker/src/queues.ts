@@ -60,14 +60,15 @@ export const sendAlertWorker = new Worker<{
   strategyName: string;
   match: MatchSnapshot;
   result: EvaluationResult;
+  telegramChatId?: string;
 }>(
   'send-alert',
   async (job) => {
-    const { strategyName, match, result } = job.data;
+    const { strategyName, match, result, telegramChatId } = job.data;
     console.log(
       `[SendAlertWorker] Sending alert for strategy "${strategyName}" (attempt ${job.attemptsMade + 1})`,
     );
-    await sendAlert(strategyName, match, result);
+    await sendAlert(strategyName, match, result, telegramChatId);
   },
   {
     connection: redis,
