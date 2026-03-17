@@ -6,6 +6,8 @@ import type {
   Rule,
   RuleValueType,
 } from '@matchiq/shared-types';
+
+type StrategyWithTelegram = StrategyWithRules & { telegramChatId?: string };
 import { supabase } from './supabase';
 import { ProviderService } from './provider-service';
 import { createTrigger } from './trigger-service';
@@ -109,7 +111,7 @@ export async function scanMatches(): Promise<void> {
 /**
  * Loads all active strategies with their rules.
  */
-async function loadActiveStrategies(): Promise<StrategyWithRules[]> {
+async function loadActiveStrategies(): Promise<StrategyWithTelegram[]> {
   const { data: strategies, error: strategiesError } = await supabase
     .from('strategies')
     .select('*')
@@ -138,7 +140,7 @@ async function loadActiveStrategies(): Promise<StrategyWithRules[]> {
   }
 
   // Load rules for all strategies
-  const strategiesWithRules: StrategyWithRules[] = [];
+  const strategiesWithRules: StrategyWithTelegram[] = [];
   for (const strategy of strategies) {
     const { data: rules, error: rulesError } = await supabase
       .from('rules')
@@ -167,7 +169,7 @@ async function loadActiveStrategies(): Promise<StrategyWithRules[]> {
  * Evaluates a strategy against a match and triggers if it passes.
  */
 async function evaluateAndTrigger(
-  strategy: StrategyWithRules,
+  strategy: StrategyWithTelegram,
   match: MatchSnapshot,
   onTrigger: () => void,
 ): Promise<void> {
@@ -216,7 +218,7 @@ async function evaluateAndTrigger(
       strategyName: strategy.name,
       match,
       result,
-      telegramChatId: (strategy as StrategyWithRules & { telegramChatId?: string }).telegramChatId,
+      telegramChatId: strategy.telegramChatId,
     });
 
     // Update performance stats

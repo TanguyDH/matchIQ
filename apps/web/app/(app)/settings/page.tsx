@@ -92,7 +92,8 @@ export default function SettingsPage() {
           <h2 className="text-base font-medium text-[#f1f5f9]">Notifications Telegram</h2>
         </div>
         <p className="text-sm text-[#64748b] mb-5">
-          Connectez votre Telegram pour recevoir les alertes de vos stratégies directement dans votre canal privé.
+          Connectez votre Telegram pour recevoir les alertes de vos stratégies directement dans votre canal
+          privé.
         </p>
 
         {loading ? (
