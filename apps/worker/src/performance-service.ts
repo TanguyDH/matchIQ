@@ -1,6 +1,40 @@
 import { supabase } from './supabase';
 
 /**
+ * Records a HIT or MISS for a strategy and recalculates hit_rate.
+ */
+export async function recordOutcome(strategyId: string, result: 'HIT' | 'MISS'): Promise<void> {
+  try {
+    const { data: existing } = await supabase
+      .from('performance')
+      .select('*')
+      .eq('strategy_id', strategyId)
+      .single();
+
+    if (!existing) return; // Should not happen — incrementTriggerCount creates the row
+
+    const newHits = result === 'HIT' ? existing.total_hits + 1 : existing.total_hits;
+    const newMisses = result === 'MISS' ? existing.total_misses + 1 : existing.total_misses;
+    const hitRate = existing.total_triggers > 0
+      ? ((newHits / existing.total_triggers) * 100).toFixed(2)
+      : '0.00';
+
+    const { error } = await supabase
+      .from('performance')
+      .update({ total_hits: newHits, total_misses: newMisses, hit_rate: hitRate })
+      .eq('strategy_id', strategyId);
+
+    if (error) throw error;
+
+    console.log(
+      `[PerformanceService] ${result}: strategy=${strategyId}, hits=${newHits}, misses=${newMisses}, rate=${hitRate}%`,
+    );
+  } catch (error) {
+    console.error('[PerformanceService] Failed to record outcome:', error);
+  }
+}
+
+/**
  * Updates performance stats for a strategy after a trigger is created.
  * Uses upsert to handle first-time initialization.
  *

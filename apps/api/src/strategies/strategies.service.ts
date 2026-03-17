@@ -13,10 +13,25 @@ export class StrategiesService {
   // ── queries ────────────────────────────────────────────────────────────────
 
   async findAll(userId: string) {
-    return unwrap(
+    const strategies = unwrap(
       await this.supabase.client.from('strategies').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       StrategiesService.name,
     );
+
+    if (strategies.length === 0) return [];
+
+    const { data: perfRows } = await this.supabase.client
+      .from('performance')
+      .select('strategy_id, total_triggers, hit_rate')
+      .in('strategy_id', strategies.map((s) => s.id));
+
+    const perfMap = new Map((perfRows ?? []).map((p) => [p.strategy_id, p]));
+
+    return strategies.map((s) => ({
+      ...s,
+      total_triggers: perfMap.get(s.id)?.total_triggers ?? 0,
+      hit_rate: perfMap.get(s.id)?.hit_rate ?? '0.00',
+    }));
   }
 
   /**

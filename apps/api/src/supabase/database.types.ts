@@ -124,7 +124,25 @@ export interface Database {
         Relationships: [];
       };
 
-      // triggers & performance are read-only from the API's perspective;
+      performance: {
+        Row: {
+          strategy_id: string;
+          total_triggers: number;
+          total_hits: number;
+          total_misses: number;
+          hit_rate: string;
+        };
+        Insert: { strategy_id: string };
+        Update: {
+          total_triggers?: number;
+          total_hits?: number;
+          total_misses?: number;
+          hit_rate?: string;
+        };
+        Relationships: [];
+      };
+
+      // triggers are read-only from the API's perspective;
       // the worker writes them via the service-role key.
     };
     Views: Record<string, never>;

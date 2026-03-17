@@ -34,6 +34,8 @@ export interface Strategy {
   desired_outcome: string | null;
   is_active: boolean;
   created_at: string;
+  total_triggers?: number;
+  hit_rate?: string;
 }
 
 export interface Rule {

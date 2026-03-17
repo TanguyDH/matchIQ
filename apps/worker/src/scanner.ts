@@ -14,6 +14,7 @@ import { createTrigger } from './trigger-service';
 import { incrementTriggerCount } from './performance-service';
 import { isDuplicateTrigger, markTriggerProcessed } from './redis';
 import { sendAlertQueue } from './queues';
+import { resolveFinishedMatches } from './result-resolver';
 import {
   analyzeDataRequirements,
   logDataRequirements,
@@ -102,6 +103,9 @@ export async function scanMatches(): Promise<void> {
     console.log(
       `[Scanner] Skipped ${allFixtures.length - fixtures.length} fixtures due to limit`,
     );
+
+    // Resolve HIT/MISS for triggers whose match has now finished
+    await resolveFinishedMatches();
   } catch (error) {
     console.error('[Scanner] Scan failed:', error);
     // Don't throw - let the next cycle try again

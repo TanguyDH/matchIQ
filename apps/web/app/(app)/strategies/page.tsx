@@ -139,10 +139,13 @@ function StrategyCard({
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#334155]">
         <div className="flex gap-4">
           <span className="text-xs text-[#475569] font-mono">
-            Picks <span className="text-[#94a3b8]">0</span>
+            Picks <span className="text-[#94a3b8]">{strategy.total_triggers ?? 0}</span>
           </span>
           <span className="text-xs text-[#475569] font-mono">
-            Hit% <span className="text-[#94a3b8]">0%</span>
+            Hit%{' '}
+            <span className="text-[#94a3b8]">
+              {strategy.hit_rate ? `${parseFloat(strategy.hit_rate).toFixed(1)}%` : '0%'}
+            </span>
           </span>
         </div>
         <Toggle on={strategy.is_active} onToggle={onToggle} />
@@ -269,10 +272,12 @@ function StrategyRow({
           </div>
         </td>
         <td onClick={(e) => e.stopPropagation()}>
-          <span className="text-sm font-mono text-[#94a3b8]">0</span>
+          <span className="text-sm font-mono text-[#94a3b8]">{strategy.total_triggers ?? 0}</span>
         </td>
         <td onClick={(e) => e.stopPropagation()}>
-          <span className="text-sm font-mono text-[#94a3b8]">0%</span>
+          <span className="text-sm font-mono text-[#94a3b8]">
+            {strategy.hit_rate ? `${parseFloat(strategy.hit_rate).toFixed(1)}%` : '0%'}
+          </span>
         </td>
         <td onClick={(e) => e.stopPropagation()}>
           <Toggle on={strategy.is_active} onToggle={onToggle} />
