@@ -1,8 +1,11 @@
 import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 
 import { SupabaseService, unwrap } from '../supabase/supabase.service';
+import type { Database } from '../supabase/database.types';
 import { CreateStrategyDto } from './dto/create-strategy.dto';
 import { PatchStrategyDto } from './dto/patch-strategy.dto';
+
+type StrategyRow = Database['public']['Tables']['strategies']['Row'];
 
 @Injectable()
 export class StrategiesService {
@@ -16,7 +19,7 @@ export class StrategiesService {
     const strategies = unwrap(
       await this.supabase.client.from('strategies').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       StrategiesService.name,
-    );
+    ) as StrategyRow[];
 
     if (strategies.length === 0) return [];
 

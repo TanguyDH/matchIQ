@@ -92,7 +92,8 @@ export async function resolveFinishedMatches(): Promise<void> {
     );
 
     for (const trigger of matchTriggers) {
-      const strategy = trigger.strategies as { desired_outcome: string | null } | null;
+      const strategyRaw = trigger.strategies as unknown;
+      const strategy = Array.isArray(strategyRaw) ? strategyRaw[0] : strategyRaw as { desired_outcome: string | null } | null;
       const desiredOutcome = strategy?.desired_outcome;
 
       if (!desiredOutcome) {
