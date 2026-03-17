@@ -3,6 +3,7 @@ import { redis } from './redis';
 import { config } from './config';
 import { scanMatches } from './scanner';
 import { sendAlert } from './telegram';
+import { supabase } from './supabase';
 import type { EvaluationResult, MatchSnapshot } from '@matchiq/shared-types';
 
 // ─── Queue Definitions ────────────────────────────────────────────────────────
@@ -57,6 +58,7 @@ scanTickWorker.on('failed', (job, err) => {
  * send-alert worker: processes alert sending jobs with retries
  */
 export const sendAlertWorker = new Worker<{
+  triggerId: string;
   strategyName: string;
   match: MatchSnapshot;
   result: EvaluationResult;
@@ -64,11 +66,17 @@ export const sendAlertWorker = new Worker<{
 }>(
   'send-alert',
   async (job) => {
-    const { strategyName, match, result, telegramChatId } = job.data;
+    const { triggerId, strategyName, match, result, telegramChatId } = job.data;
     console.log(
       `[SendAlertWorker] Sending alert for strategy "${strategyName}" (attempt ${job.attemptsMade + 1})`,
     );
-    await sendAlert(strategyName, match, result, telegramChatId);
+    const sent = await sendAlert(strategyName, match, result, telegramChatId);
+    if (sent && triggerId) {
+      await supabase
+        .from('triggers')
+        .update({ telegram_message_id: sent.messageId, telegram_chat_id: sent.chatId })
+        .eq('id', triggerId);
+    }
   },
   {
     connection: redis,

@@ -20,6 +20,10 @@
 ✅ Rule engine — 402 PRE_MATCH metrics
 ✅ Rule engine — 412 ODDS metrics (pm + live)
 ✅ Deduplication (Redis + DB unique constraint)
+✅ Live stats time-series (`match_stats_timeline` — all stats, every minute, every match)
+✅ HIT/MISS resolution after match finish (`result-resolver.ts` + `outcome-evaluator.ts`)
+✅ Per-user Telegram notifications
+✅ Per-strategy league filter + global default league selection
 
 ---
 
@@ -95,7 +99,11 @@
 │           ├── supabase.ts
 │           ├── replay.ts
 │           ├── replay-mode.ts
-│           └── mock-provider.ts
+│           ├── mock-provider.ts
+│           ├── stats-timeline.ts          # Upsert/query match_stats_timeline
+│           ├── result-resolver.ts         # HIT/MISS resolution at match end
+│           ├── outcome-evaluator.ts       # Pure function — evaluates desired_outcome
+│           └── halftime-snapshot.ts       # (replaced by stats-timeline)
 │
 ├── packages/
 │   ├── shared-types/         # All types + metric definitions
@@ -187,8 +195,53 @@ FAVOURITE/UNDERDOG resolved via `home_pm_odds_1x2` / `away_pm_odds_1x2`.
 2. Analyze data requirements
 3. Fetch live fixtures (`/livescores/inplay?include=state;scores;participants;statistics.type;league;events;participants.latest.scores;participants.latest.statistics;odds;inplayOdds`)
 4. Normalize each fixture → MatchSnapshot
-5. Evaluate each strategy via rule-engine
-6. On pass: check Redis dedup → DB insert → Telegram alert
+5. **Upsert all live stats into `match_stats_timeline`** (one row per match per minute)
+6. Evaluate each strategy via rule-engine
+7. On pass: check Redis dedup → DB insert → Telegram alert
+
+---
+
+## 7b) match_stats_timeline — Live Stats Time-Series
+
+**Table:** `match_stats_timeline`
+**Primary Key:** `(match_id, minute)`
+**Written by:** worker on every scan cycle (~30s), upsert — one row per minute per match.
+**Purpose:** Reconstruct stats at any point in a match (e.g. corners at minute 45 = 1H total).
+
+**All columns available (NULL when not provided by SportMonks for that match):**
+
+| Category | Columns (home_* / away_*) |
+|---|---|
+| Score | `home_score`, `away_score` |
+| Shots | `shots_total`, `shots_on_target`, `shots_off_target`, `shots_inside_box`, `shots_outside_box`, `shots_blocked`, `goal_attempts` |
+| Corners | `corners` |
+| Cards | `yellow_cards`, `red_cards` |
+| Possession & Passes | `possession`, `passes_total`, `passes_accurate`, `passes_percentage`, `long_passes`, `long_passes_accurate`, `long_passes_percentage`, `key_passes` |
+| Attacks | `attacks`, `dangerous_attacks`, `counter_attacks`, `big_chances`, `big_chances_missed` |
+| Defending | `fouls`, `offsides`, `free_kicks`, `saves`, `tackles`, `interceptions`, `successful_headers` |
+| Dribbles | `successful_dribbles`, `dribbles_percentage` |
+| Crosses | `crosses`, `crosses_accurate` |
+| Misc | `assists`, `ball_safe` |
+
+**Typical queries:**
+```sql
+-- Corners in 1st half (stats at minute ≤ 45)
+SELECT home_corners, away_corners FROM match_stats_timeline
+WHERE match_id = '...' AND minute <= 45
+ORDER BY minute DESC LIMIT 1;
+
+-- Shots between minute 20 and 50 (cumulative delta)
+SELECT MAX(home_shots_total) - MIN(home_shots_total) AS home_shots_in_range
+FROM match_stats_timeline
+WHERE match_id = '...' AND minute BETWEEN 20 AND 50;
+
+-- Yellow cards in 2nd half
+SELECT MAX(home_yellow_cards) - MIN(home_yellow_cards) AS home_cards_2h
+FROM match_stats_timeline
+WHERE match_id = '...' AND minute > 45;
+```
+
+**Cleanup:** rows older than 14 days deleted via `cleanupOldStats()` in `stats-timeline.ts`.
 
 ---
 

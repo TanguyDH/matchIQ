@@ -14,30 +14,64 @@ const bot = new TelegramBot(config.telegram.botToken, { polling: false });
  * @param match - The match snapshot
  * @param result - The evaluation result with matched rules
  */
+/**
+ * Sends a Telegram alert when a strategy triggers.
+ * Returns { messageId, chatId } so the trigger record can be updated for later editing.
+ */
 export async function sendAlert(
   strategyName: string,
   match: MatchSnapshot,
   result: EvaluationResult,
   chatId?: string,
-): Promise<void> {
+): Promise<{ messageId: number; chatId: string } | null> {
   const targetChatId = chatId ?? config.telegram.chatId;
 
   if (!targetChatId) {
     console.warn(`[Telegram] No chat_id for strategy "${strategyName}" — alert skipped`);
-    return;
+    return null;
   }
 
   try {
     const message = formatAlertMessage(strategyName, match, result);
 
-    await bot.sendMessage(targetChatId, message, {
+    const sent = await bot.sendMessage(targetChatId, message, {
       parse_mode: 'Markdown',
     });
 
-    console.log(`[Telegram] Alert sent for strategy "${strategyName}"`);
+    console.log(`[Telegram] Alert sent for strategy "${strategyName}" (msg_id=${sent.message_id})`);
+    return { messageId: sent.message_id, chatId: targetChatId };
   } catch (error) {
     console.error('[Telegram] Failed to send alert:', error);
-    throw error; // Re-throw so caller can handle retry logic
+    throw error;
+  }
+}
+
+/**
+ * Appends the HIT/MISS result line to an existing alert message.
+ * Called by result-resolver once the match is finished.
+ */
+export async function editAlertResult(
+  chatId: string,
+  messageId: number,
+  result: 'HIT' | 'MISS',
+  homeFinal: number,
+  awayFinal: number,
+): Promise<void> {
+  const resultLine =
+    result === 'HIT'
+      ? `\n\n✅ *HIT* — Final: ${homeFinal}\\-${awayFinal}`
+      : `\n\n❌ *MISS* — Final: ${homeFinal}\\-${awayFinal}`;
+
+  try {
+    // Fetch the original message text via getUpdates is not reliable;
+    // instead we send a reply to the original alert message.
+    await bot.sendMessage(chatId, resultLine, {
+      parse_mode: 'MarkdownV2',
+      reply_parameters: { message_id: messageId },
+    } as any);
+    console.log(`[Telegram] Result reply sent (msg_id=${messageId}): ${result}`);
+  } catch (error) {
+    console.error('[Telegram] Failed to send result reply:', error);
   }
 }
 

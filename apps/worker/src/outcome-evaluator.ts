@@ -187,10 +187,28 @@ export function evaluateOutcome(
       if (favHT === null || undHT === null) return null;
       return undHT >= favHT ? 'HIT' : 'MISS';
 
-    case 'WINNING_TEAM_LOSE_OR_DRAW':
-    case 'WINNING_TEAM_LOSE_OR_DRAW_HT':
-      // Requires score snapshot at trigger time — cannot evaluate from final score alone
-      return null;
+    case 'WINNING_TEAM_LOSE_OR_DRAW': {
+      // The team that was leading at trigger time must NOT win at full time
+      if (r.homeAtTrigger === null || r.awayAtTrigger === null) return null;
+      if (r.homeAtTrigger === r.awayAtTrigger) return null; // no leading team at trigger time
+      const homeWasLeading = r.homeAtTrigger > r.awayAtTrigger;
+      if (homeWasLeading) {
+        return r.homeFinal <= r.awayFinal ? 'HIT' : 'MISS';
+      } else {
+        return r.awayFinal <= r.homeFinal ? 'HIT' : 'MISS';
+      }
+    }
+    case 'WINNING_TEAM_LOSE_OR_DRAW_HT': {
+      // Same but evaluated at half-time result
+      if (r.homeAtTrigger === null || r.awayAtTrigger === null) return null;
+      if (r.homeAtTrigger === r.awayAtTrigger) return null;
+      const homeWasLeading = r.homeAtTrigger > r.awayAtTrigger;
+      if (homeWasLeading) {
+        return r.homeHT <= r.awayHT ? 'HIT' : 'MISS';
+      } else {
+        return r.awayHT <= r.homeHT ? 'HIT' : 'MISS';
+      }
+    }
 
     // ── Double Chance ─────────────────────────────────────────────────────────
     case 'DOUBLE_CHANCE_12':
@@ -714,6 +732,29 @@ export function evaluateOutcome(
       return under(totalCardsSH, 5.5);
     case 'UNDER_6_5_CARDS_2H':
       return under(totalCardsSH, 6.5);
+
+    // ── Combos ────────────────────────────────────────────────────────────────
+    case 'OVER_2_5_GOALS_OR_BTTS':
+      return totalGoals > 2.5 || btts ? 'HIT' : 'MISS';
+    case 'OVER_2_5_GOALS_AND_BTTS':
+      return totalGoals > 2.5 && btts ? 'HIT' : 'MISS';
+    case 'FAV_WIN_HT_OR_OVER_1_5_GOALS_HT':
+      if (favHT === null || undHT === null) return null;
+      return favHT > undHT || totalGoalsHT > 1.5 ? 'HIT' : 'MISS';
+
+    // ── Win By 1 ──────────────────────────────────────────────────────────────
+    case 'HOME_WIN_BY_1':
+      return r.homeFinal - r.awayFinal === 1 ? 'HIT' : 'MISS';
+    case 'AWAY_WIN_BY_1':
+      return r.awayFinal - r.homeFinal === 1 ? 'HIT' : 'MISS';
+    case 'HOME_OR_AWAY_WIN_BY_1':
+      return Math.abs(r.homeFinal - r.awayFinal) === 1 ? 'HIT' : 'MISS';
+    case 'HOME_WIN_1H_BY_1':
+      return r.homeHT - r.awayHT === 1 ? 'HIT' : 'MISS';
+    case 'AWAY_WIN_1H_BY_1':
+      return r.awayHT - r.homeHT === 1 ? 'HIT' : 'MISS';
+    case 'HOME_OR_AWAY_WIN_1H_BY_1':
+      return Math.abs(r.homeHT - r.awayHT) === 1 ? 'HIT' : 'MISS';
 
     // ── Half Comparison ───────────────────────────────────────────────────────
     case 'MOST_GOALS_1H':

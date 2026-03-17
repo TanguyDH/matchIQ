@@ -163,12 +163,7 @@ interface CountryGroup {
   leagues: League[];
 }
 
-export default function LeagueSelector({
-  token,
-  selectedIds,
-  onSave,
-  onClose,
-}: Props) {
+export default function LeagueSelector({ token, selectedIds, onSave, onClose }: Props) {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -219,9 +214,7 @@ export default function LeagueSelector({
 
     for (const l of leagues) {
       const q = search.toLowerCase();
-      const countryName = l.countryCode
-        ? (COUNTRY_NAMES[l.countryCode] ?? l.countryCode)
-        : '';
+      const countryName = l.countryCode ? (COUNTRY_NAMES[l.countryCode] ?? l.countryCode) : '';
       const matchesLeague = l.name.toLowerCase().includes(q);
       const matchesCountry = countryName.toLowerCase().includes(q);
       if (q && !matchesLeague && !matchesCountry) continue;
@@ -260,18 +253,13 @@ export default function LeagueSelector({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <h2 className="text-sm font-semibold text-[#f1f5f9]">
-            Sélectionner les ligues
-          </h2>
+          <h2 className="text-sm font-semibold text-[#f1f5f9]">Sélectionner les ligues</h2>
           <button
             onClick={onClose}
             className="text-[#475569] hover:text-[#f1f5f9] transition-colors text-lg"
@@ -310,25 +298,16 @@ export default function LeagueSelector({
         {/* List */}
         <div className="overflow-y-auto flex-1 px-2 pb-2">
           {loading ? (
-            <div className="py-8 text-center text-xs text-[#475569] font-mono">
-              Chargement…
-            </div>
+            <div className="py-8 text-center text-xs text-[#475569] font-mono">Chargement…</div>
           ) : groups.length === 0 ? (
-            <div className="py-8 text-center text-xs text-[#475569]">
-              Aucune ligue trouvée
-            </div>
+            <div className="py-8 text-center text-xs text-[#475569]">Aucune ligue trouvée</div>
           ) : (
             groups.map((group) => {
               const isOpen = !collapsed.has(group.code);
               const leagueIds = group.leagues.map((l) => l.id);
-              const selectedCount = leagueIds.filter((id) =>
-                selected.has(id),
-              ).length;
-              const allSelected =
-                leagueIds.length > 0 &&
-                selectedCount === leagueIds.length;
-              const someSelected =
-                selectedCount > 0 && selectedCount < leagueIds.length;
+              const selectedCount = leagueIds.filter((id) => selected.has(id)).length;
+              const allSelected = leagueIds.length > 0 && selectedCount === leagueIds.length;
+              const someSelected = selectedCount > 0 && selectedCount < leagueIds.length;
 
               return (
                 <div key={group.code} className="mb-1">
@@ -354,14 +333,10 @@ export default function LeagueSelector({
                       }`}
                     >
                       {allSelected && (
-                        <span className="text-[#0f172a] text-[9px] font-bold leading-none">
-                          ✓
-                        </span>
+                        <span className="text-[#0f172a] text-[9px] font-bold leading-none">✓</span>
                       )}
                       {someSelected && (
-                        <span className="text-[#10b981] text-[9px] font-bold leading-none">
-                          −
-                        </span>
+                        <span className="text-[#10b981] text-[9px] font-bold leading-none">−</span>
                       )}
                     </button>
 
@@ -370,9 +345,7 @@ export default function LeagueSelector({
                       onClick={() => toggleCollapse(group.code)}
                       className="flex items-center gap-2 flex-1 text-left"
                     >
-                      <span className="text-base w-5 text-center flex-shrink-0">
-                        {group.flag}
-                      </span>
+                      <span className="text-base w-5 text-center flex-shrink-0">{group.flag}</span>
                       <span className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider">
                         {group.name}
                       </span>
@@ -401,9 +374,7 @@ export default function LeagueSelector({
                           >
                             <div
                               className={`w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
-                                isSelected
-                                  ? 'bg-[#10b981] border-[#10b981]'
-                                  : 'border-[#475569]'
+                                isSelected ? 'bg-[#10b981] border-[#10b981]' : 'border-[#475569]'
                               }`}
                             >
                               {isSelected && (

@@ -3,6 +3,7 @@ import { config } from './config';
 import { evaluateOutcome, type MatchResult } from './outcome-evaluator';
 import { recordOutcome } from './performance-service';
 import { getStatsAtMinute } from './stats-timeline';
+import { editAlertResult } from './telegram';
 
 // SportMonks statistic type IDs
 const STAT = {
@@ -211,7 +212,7 @@ export async function resolveFinishedMatches(): Promise<void> {
   const { data: triggers, error } = await supabase
     .from('triggers')
     .select(
-      'id, match_id, strategy_id, score_home, score_away, evidence_json, strategies(desired_outcome)',
+      'id, match_id, strategy_id, minute, score_home, score_away, evidence_json, telegram_message_id, telegram_chat_id, strategies(desired_outcome)',
     )
     .is('result', null)
     .limit(50);
@@ -250,6 +251,17 @@ export async function resolveFinishedMatches(): Promise<void> {
     const cornersAwayHT =
       htStats?.away_corners != null ? (htStats.away_corners as number) : null;
 
+    // FT corners: prefer SportMonks statistics, fallback to last timeline row
+    let cornersHomeFT = data.cornersHome;
+    let cornersAwayFT = data.cornersAway;
+    if (cornersHomeFT === null || cornersAwayFT === null) {
+      const ftStats = await getStatsAtMinute(matchId, 999);
+      if (cornersHomeFT === null && ftStats?.home_corners != null)
+        cornersHomeFT = ftStats.home_corners as number;
+      if (cornersAwayFT === null && ftStats?.away_corners != null)
+        cornersAwayFT = ftStats.away_corners as number;
+    }
+
     const cardsHomeHTFromTimeline =
       htStats?.home_yellow_cards != null
         ? ((htStats.home_yellow_cards as number) ?? 0) +
@@ -265,7 +277,7 @@ export async function resolveFinishedMatches(): Promise<void> {
       `[ResultResolver] Match ${matchId} finished: ` +
         `${data.homeFinal}-${data.awayFinal} ` +
         `(HT: ${data.homeHT}-${data.awayHT}, ` +
-        `corners FT: ${data.cornersHome ?? '?'}-${data.cornersAway ?? '?'}, ` +
+        `corners FT: ${cornersHomeFT ?? '?'}-${cornersAwayFT ?? '?'}, ` +
         `corners HT: ${cornersHomeHT ?? '?'}-${cornersAwayHT ?? '?'})`,
     );
 
@@ -277,7 +289,10 @@ export async function resolveFinishedMatches(): Promise<void> {
       const desiredOutcome = strategy?.desired_outcome;
 
       if (!desiredOutcome) {
-        await resolveTrigger(trigger.id, trigger.strategy_id, 'MISS');
+        await resolveTrigger(trigger.id, trigger.strategy_id, 'MISS',
+          (trigger as any).telegram_message_id ?? null,
+          (trigger as any).telegram_chat_id ?? null,
+          data.homeFinal, data.awayFinal);
         continue;
       }
 
@@ -286,11 +301,15 @@ export async function resolveFinishedMatches(): Promise<void> {
       const homeOdds = evidence?.odds?.prematch_home_win as number | undefined;
       const awayOdds = evidence?.odds?.prematch_away_win as number | undefined;
 
-      // Corners at trigger time from evidence_json (for "Since Picked" corner outcomes)
-      const cornersAtTrigger =
-        typeof evidence?.corners_total === 'number'
-          ? (evidence.corners_total as number)
-          : null;
+      // Corners at trigger time: query timeline at the minute the trigger fired
+      const triggerMinute = (trigger as any).minute as number | null;
+      let cornersAtTrigger: number | null = null;
+      if (triggerMinute != null && triggerMinute > 0) {
+        const triggerStats = await getStatsAtMinute(matchId, triggerMinute);
+        const ch = triggerStats?.home_corners != null ? (triggerStats.home_corners as number) : null;
+        const ca = triggerStats?.away_corners != null ? (triggerStats.away_corners as number) : null;
+        if (ch !== null && ca !== null) cornersAtTrigger = ch + ca;
+      }
 
       const matchResult: MatchResult = {
         homeFinal: data.homeFinal,
@@ -299,8 +318,8 @@ export async function resolveFinishedMatches(): Promise<void> {
         awayHT: data.awayHT,
         homeSH,
         awaySH,
-        cornersHome: data.cornersHome,
-        cornersAway: data.cornersAway,
+        cornersHome: cornersHomeFT,
+        cornersAway: cornersAwayFT,
         cornersHomeHT,
         cornersAwayHT,
         cardsHome: data.cardsHome,
@@ -323,7 +342,15 @@ export async function resolveFinishedMatches(): Promise<void> {
         continue;
       }
 
-      await resolveTrigger(trigger.id, trigger.strategy_id, result);
+      await resolveTrigger(
+        trigger.id,
+        trigger.strategy_id,
+        result,
+        (trigger as any).telegram_message_id as number | null,
+        (trigger as any).telegram_chat_id as string | null,
+        data.homeFinal,
+        data.awayFinal,
+      );
     }
   }
 }
@@ -332,6 +359,10 @@ async function resolveTrigger(
   triggerId: string,
   strategyId: string,
   result: 'HIT' | 'MISS',
+  telegramMessageId: number | null,
+  telegramChatId: string | null,
+  homeFinal: number,
+  awayFinal: number,
 ): Promise<void> {
   const { error } = await supabase
     .from('triggers')
@@ -350,4 +381,9 @@ async function resolveTrigger(
   console.log(`[ResultResolver] Trigger ${triggerId} → ${result}`);
 
   await recordOutcome(strategyId, result);
+
+  // Notify via Telegram reply on the original alert message
+  if (telegramMessageId && telegramChatId) {
+    await editAlertResult(telegramChatId, telegramMessageId, result, homeFinal, awayFinal);
+  }
 }

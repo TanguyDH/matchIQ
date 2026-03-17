@@ -16,6 +16,7 @@ import { isDuplicateTrigger, markTriggerProcessed } from './redis';
 import { sendAlertQueue } from './queues';
 import { resolveFinishedMatches } from './result-resolver';
 import { upsertMatchStats } from './stats-timeline';
+import { resolveLiveTriggers } from './live-resolver';
 import {
   analyzeDataRequirements,
   logDataRequirements,
@@ -87,6 +88,9 @@ export async function scanMatches(): Promise<void> {
 
         // Persist all live stats to timeline (one row per match per minute)
         await upsertMatchStats(match);
+
+        // Resolve any pending triggers whose outcome is already locked in
+        await resolveLiveTriggers(match);
 
         // Evaluate against all strategies
         for (const strategy of strategies) {
@@ -229,6 +233,7 @@ async function evaluateAndTrigger(
 
     // PHASE 6: Queue alert for async processing with retries
     await sendAlertQueue.add('send-alert', {
+      triggerId,
       strategyName: strategy.name,
       match,
       result,
