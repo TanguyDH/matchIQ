@@ -183,6 +183,12 @@ async function evaluateAndTrigger(
       return;
     }
 
+    // Skip if strategy has league filter and this match's league is not in the list
+    const leagueIds = (strategy as StrategyWithTelegram & { league_ids?: number[] | null }).league_ids;
+    if (leagueIds && leagueIds.length > 0 && match.leagueId !== undefined) {
+      if (!leagueIds.includes(match.leagueId)) return;
+    }
+
     // PHASE 6: Check Redis dedup FIRST (fast path)
     const isDuplicate = await isDuplicateTrigger(strategy.id, match.id);
     if (isDuplicate) {

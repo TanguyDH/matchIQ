@@ -36,6 +36,7 @@ export interface Strategy {
   created_at: string;
   total_triggers?: number;
   hit_rate?: string;
+  league_ids?: number[] | null;
 }
 
 export interface Rule {
@@ -105,6 +106,7 @@ export interface MatchSnapshot {
   isLive: boolean;
   // Match context
   league?: string;
+  leagueId?: number;
   leagueCountry?: string; // Country code for flag emoji (e.g., 'GB', 'ES')
   homePosition?: number; // League standings position
   awayPosition?: number;

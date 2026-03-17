@@ -990,6 +990,7 @@ export class ProviderService {
       minute,
       isLive,
       league,
+      leagueId: fixture.league?.id,
       leagueCountry,
       homePosition,
       awayPosition,

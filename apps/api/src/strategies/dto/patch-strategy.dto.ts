@@ -8,6 +8,7 @@ export const PatchStrategySchema = z
     alert_type: z.enum(['IN_PLAY', 'PRE_MATCH']).optional(),
     desired_outcome: z.string().nullable().optional(),
     is_active: z.boolean().optional(),
+    league_ids: z.array(z.number().int().positive()).nullable().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',

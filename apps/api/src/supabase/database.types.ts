@@ -46,6 +46,7 @@ export interface Database {
           desired_outcome: string | null;
           is_active: boolean;
           created_at: string;
+          league_ids: number[] | null;
         };
         Insert: {
           user_id: string;
@@ -55,6 +56,7 @@ export interface Database {
           alert_type: AlertType;
           desired_outcome?: string | null;
           is_active?: boolean;
+          league_ids?: number[] | null;
         };
         Update: {
           name?: string;
@@ -63,6 +65,7 @@ export interface Database {
           alert_type?: AlertType;
           desired_outcome?: string | null;
           is_active?: boolean;
+          league_ids?: number[] | null;
         };
         Relationships: [];
       };
@@ -121,6 +124,13 @@ export interface Database {
           link_token_expires_at?: string | null;
           linked_at?: string | null;
         };
+        Relationships: [];
+      };
+
+      user_settings: {
+        Row: { user_id: string; default_league_ids: number[] | null; created_at: string };
+        Insert: { user_id: string; default_league_ids?: number[] | null };
+        Update: { default_league_ids?: number[] | null };
         Relationships: [];
       };
 

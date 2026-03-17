@@ -56,4 +56,16 @@ export const api = {
 
   disconnectTelegram: (token: string | null) =>
     request<void>('/telegram/disconnect', token, { method: 'DELETE' }),
+
+  getLeagues: (token: string | null) =>
+    request<{ id: number; name: string; countryCode?: string }[]>('/leagues', token),
+
+  getUserSettings: (token: string | null) =>
+    request<{ default_league_ids: number[] | null }>('/user-settings', token),
+
+  updateUserSettings: (token: string | null, defaultLeagueIds: number[] | null) =>
+    request<{ default_league_ids: number[] | null }>('/user-settings', token, {
+      method: 'PUT',
+      body: JSON.stringify({ default_league_ids: defaultLeagueIds }),
+    }),
 };

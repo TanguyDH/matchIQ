@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertType, DESIRED_OUTCOMES } from '@matchiq/shared-types';
 import { api } from '@/api/client';
@@ -15,6 +15,13 @@ export default function CreateStrategyPage() {
   const [alertType] = useState<AlertType>('IN_PLAY');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [defaultLeagueIds, setDefaultLeagueIds] = useState<number[] | null>(null);
+
+  useEffect(() => {
+    api.getUserSettings(token).then((s) => {
+      setDefaultLeagueIds(s.default_league_ids);
+    });
+  }, [token]);
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -25,6 +32,7 @@ export default function CreateStrategyPage() {
         name: name.trim(),
         alert_type: alertType,
         ...(desiredOutcome ? { desired_outcome: desiredOutcome } : {}),
+        ...(defaultLeagueIds && defaultLeagueIds.length > 0 ? { league_ids: defaultLeagueIds } : {}),
       });
       router.push(`/strategies/${strategy.id}/rules/add`);
     } catch (e) {

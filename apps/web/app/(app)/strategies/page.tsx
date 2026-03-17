@@ -6,6 +6,7 @@ import { Strategy, Rule, COMPARATOR_LABELS, TEAM_SCOPES, metricLabel } from '@ma
 import { api } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
 import Toggle from '@/components/Toggle';
+import LeagueSelector from '@/components/LeagueSelector';
 
 // ─── Actions dropdown ────────────────────────────────────────────────────────
 
@@ -161,11 +162,13 @@ function StrategyRow({
   onToggle,
   onDelete,
   onRename,
+  onLeagueChange,
 }: {
   strategy: Strategy;
   onToggle: () => void;
   onDelete: () => void;
   onRename: (newName: string) => Promise<void>;
+  onLeagueChange: (ids: number[]) => void;
 }) {
   const { token } = useAuth();
   const router = useRouter();
@@ -174,6 +177,7 @@ function StrategyRow({
   const [loadingRules, setLoadingRules] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(strategy.name);
+  const [showLeagueSelector, setShowLeagueSelector] = useState(false);
 
   const fetchRules = async () => {
     if (rules.length > 0) return;
@@ -363,17 +367,25 @@ function StrategyRow({
                   + Ajouter une règle
                 </button>
                 <button
-                  disabled
-                  className="bg-[#1e293b] border border-[#334155] text-[#475569] text-xs font-semibold px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50"
+                  onClick={() => setShowLeagueSelector(true)}
+                  className="bg-[#1e293b] border border-[#334155] text-[#94a3b8] hover:text-[#f1f5f9] hover:border-[#475569] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                 >
-                  ⏱ Historique
+                  🏆{' '}
+                  {!strategy.league_ids || strategy.league_ids.length === 0
+                    ? 'Ligues : Toutes'
+                    : `Ligues : ${strategy.league_ids.length}`}
                 </button>
-                <button
-                  disabled
-                  className="bg-[#1e293b] border border-[#334155] text-[#475569] text-xs font-semibold px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50"
-                >
-                  🏆 Ligues : Défaut
-                </button>
+                {showLeagueSelector && (
+                  <LeagueSelector
+                    token={token}
+                    selectedIds={strategy.league_ids ?? []}
+                    onClose={() => setShowLeagueSelector(false)}
+                    onSave={(ids) => {
+                      onLeagueChange(ids);
+                      setShowLeagueSelector(false);
+                    }}
+                  />
+                )}
               </div>
             </div>
           </td>
@@ -392,12 +404,19 @@ export default function StrategiesPage() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [defaultLeagueIds, setDefaultLeagueIds] = useState<number[]>([]);
+  const [showGlobalSelector, setShowGlobalSelector] = useState(false);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setStrategies(await api.getStrategies(token));
+      const [strategies, settings] = await Promise.all([
+        api.getStrategies(token),
+        api.getUserSettings(token),
+      ]);
+      setStrategies(strategies);
+      setDefaultLeagueIds(settings.default_league_ids ?? []);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -441,10 +460,27 @@ export default function StrategiesPage() {
     }
   };
 
+  const handleGlobalLeagueChange = async (ids: number[]) => {
+    setDefaultLeagueIds(ids);
+    await api.updateUserSettings(token, ids.length > 0 ? ids : null);
+  };
+
+  const handleLeagueChange = async (strategyId: string, ids: number[]) => {
+    const leagueIds = ids.length > 0 ? ids : null;
+    setStrategies((prev) =>
+      prev.map((s) => (s.id === strategyId ? { ...s, league_ids: leagueIds } : s)),
+    );
+    try {
+      await api.patchStrategy(token, strategyId, { league_ids: leagueIds });
+    } catch {
+      fetchAll();
+    }
+  };
+
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-4xl text-[#f1f5f9] tracking-wide leading-none">
             STRATÉGIES
@@ -463,6 +499,36 @@ export default function StrategiesPage() {
           + Nouvelle
         </button>
       </div>
+
+      {/* Global league filter */}
+      {!loading && (
+        <div className="flex items-center gap-2 mb-6">
+          <span className="text-[10px] text-[#334155] font-mono uppercase tracking-widest">
+            Ligues par défaut
+          </span>
+          <button
+            onClick={() => setShowGlobalSelector(true)}
+            className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors"
+          >
+            {defaultLeagueIds.length === 0
+              ? 'Toutes'
+              : `${defaultLeagueIds.length} sélectionnée${defaultLeagueIds.length > 1 ? 's' : ''}`}
+            {' ↗'}
+          </button>
+        </div>
+      )}
+
+      {showGlobalSelector && (
+        <LeagueSelector
+          token={token}
+          selectedIds={defaultLeagueIds}
+          onClose={() => setShowGlobalSelector(false)}
+          onSave={(ids) => {
+            handleGlobalLeagueChange(ids);
+            setShowGlobalSelector(false);
+          }}
+        />
+      )}
 
       {/* Loading */}
       {loading && (
@@ -516,6 +582,7 @@ export default function StrategiesPage() {
                   onToggle={() => handleToggle(s)}
                   onDelete={() => handleDelete(s)}
                   onRename={(newName) => handleRename(s.id, newName)}
+                  onLeagueChange={(ids) => handleLeagueChange(s.id, ids)}
                 />
               ))}
             </tbody>
