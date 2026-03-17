@@ -146,6 +146,7 @@ export interface CreateStrategyPayload {
   mode?: StrategyMode;
   alert_type: AlertType;
   desired_outcome?: string;
+  league_ids?: number[] | null;
 }
 
 export interface PatchStrategyPayload {
@@ -155,6 +156,7 @@ export interface PatchStrategyPayload {
   alert_type?: AlertType;
   desired_outcome?: string | null;
   is_active?: boolean;
+  league_ids?: number[] | null;
 }
 
 export interface CreateRulePayload {
