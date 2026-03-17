@@ -129,6 +129,7 @@ export class TelegramService {
   private async sendMessage(chatId: number, text: string): Promise<void> {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) return;
+    
 
     try {
       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
