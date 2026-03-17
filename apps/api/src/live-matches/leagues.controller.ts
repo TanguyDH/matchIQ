@@ -28,9 +28,9 @@ export class LeaguesController {
     try {
       const allRaw: any[] = [];
       let page = 1;
-      let lastPage = 1;
+      let hasMore = true;
 
-      do {
+      while (hasMore) {
         const res = await fetch(
           `${baseUrl}/leagues?api_token=${apiKey}&include=country&per_page=50&page=${page}`,
         );
@@ -41,9 +41,9 @@ export class LeaguesController {
         const rows: any[] = json?.data ?? [];
         allRaw.push(...rows);
 
-        lastPage = json?.pagination?.last_page ?? 1;
+        hasMore = json?.pagination?.has_more === true;
         page++;
-      } while (page <= lastPage);
+      }
 
       const leagues: LeagueDto[] = allRaw
         .map((l) => ({

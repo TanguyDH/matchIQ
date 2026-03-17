@@ -989,6 +989,7 @@ export class ProviderService {
       awayScore,
       minute,
       isLive,
+      isHalftime: state?.state === 'HT',
       league,
       leagueId: fixture.league?.id,
       leagueCountry,

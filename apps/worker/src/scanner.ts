@@ -15,6 +15,7 @@ import { incrementTriggerCount } from './performance-service';
 import { isDuplicateTrigger, markTriggerProcessed } from './redis';
 import { sendAlertQueue } from './queues';
 import { resolveFinishedMatches } from './result-resolver';
+import { upsertMatchStats } from './stats-timeline';
 import {
   analyzeDataRequirements,
   logDataRequirements,
@@ -83,6 +84,9 @@ export async function scanMatches(): Promise<void> {
         console.log(`[Scanner] home_goals:`, match.inPlay.home_goals);
         console.log(`[Scanner] attacks (home/away):`, match.inPlay.home_attacks, '/', match.inPlay.away_attacks);
         console.log(`[Scanner] dangerous_attacks (home/away):`, match.inPlay.home_dangerous_attacks, '/', match.inPlay.away_dangerous_attacks);
+
+        // Persist all live stats to timeline (one row per match per minute)
+        await upsertMatchStats(match);
 
         // Evaluate against all strategies
         for (const strategy of strategies) {

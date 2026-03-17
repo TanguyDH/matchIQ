@@ -89,7 +89,8 @@ async function replayTrigger(trigger: Trigger): Promise<void> {
     homeScore: trigger.score_home || 0,
     awayScore: trigger.score_away || 0,
     minute: trigger.minute || 0,
-    isLive: false, // Historical data, not live
+    isLive: false,
+      isHalftime: false, // Historical data, not live
     inPlay: evidence.stats || {},
     preMatch: {},
     odds: evidence.odds || {},

@@ -104,6 +104,7 @@ export interface MatchSnapshot {
   awayScore: number;
   minute: number;
   isLive: boolean;
+  isHalftime: boolean;
   // Match context
   league?: string;
   leagueId?: number;

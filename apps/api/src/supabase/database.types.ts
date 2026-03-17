@@ -152,6 +152,32 @@ export interface Database {
         Relationships: [];
       };
 
+      match_stats_timeline: {
+        Row: {
+          match_id: string;
+          minute: number;
+          home_score: number;
+          away_score: number;
+          inplay: Record<string, number>;
+          captured_at: string;
+        };
+        Insert: {
+          match_id: string;
+          minute: number;
+          home_score: number;
+          away_score: number;
+          inplay: Record<string, number>;
+          captured_at?: string;
+        };
+        Update: {
+          home_score?: number;
+          away_score?: number;
+          inplay?: Record<string, number>;
+          captured_at?: string;
+        };
+        Relationships: [];
+      };
+
       // triggers are read-only from the API's perspective;
       // the worker writes them via the service-role key.
     };

@@ -177,6 +177,7 @@ export function getLiveMatches(): MatchSnapshot[] {
     awayScore: match.awayScore,
     minute: match.minute,
     isLive: match.minute < 90,
+      isHalftime: false,
     inPlay: {
       home_goals: match.homeGoals,
       away_goals: match.awayGoals,

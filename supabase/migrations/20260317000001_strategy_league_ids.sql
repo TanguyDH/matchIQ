@@ -2,4 +2,4 @@
 -- NULL = all leagues (default behaviour).
 -- Non-null = only trigger for matches in the listed league IDs.
 
-ALTER TABLE strategies ADD COLUMN league_ids INTEGER[];
+ALTER TABLE strategies ADD COLUMN IF NOT EXISTS league_ids INTEGER[];
