@@ -113,7 +113,7 @@ export async function resolveLiveTriggers(match: MatchSnapshot): Promise<void> {
   const { data: triggers, error } = await supabase
     .from('triggers')
     .select(
-      'id, strategy_id, minute, score_home, score_away, evidence_json, telegram_message_id, telegram_chat_id, strategies(desired_outcome)',
+      'id, strategy_id, minute, score_home, score_away, evidence_json, telegram_message_id, telegram_chat_id, telegram_message_text, strategies(desired_outcome)',
     )
     .eq('match_id', match.id)
     .is('result', null);
@@ -150,6 +150,7 @@ export async function resolveLiveTriggers(match: MatchSnapshot): Promise<void> {
       evaluation,
       (trigger as any).telegram_message_id as number | null,
       (trigger as any).telegram_chat_id as string | null,
+      (trigger as any).telegram_message_text as string | null,
       match.homeScore,
       match.awayScore,
     );
@@ -162,6 +163,7 @@ async function resolveNow(
   result: 'HIT' | 'MISS',
   telegramMessageId: number | null,
   telegramChatId: string | null,
+  telegramMessageText: string | null,
   homeScore: number,
   awayScore: number,
 ): Promise<void> {
@@ -180,7 +182,7 @@ async function resolveNow(
 
   await recordOutcome(strategyId, result);
 
-  if (telegramMessageId && telegramChatId) {
-    await editAlertResult(telegramChatId, telegramMessageId, result, homeScore, awayScore);
+  if (telegramMessageId && telegramChatId && telegramMessageText) {
+    await editAlertResult(telegramChatId, telegramMessageId, telegramMessageText, result, homeScore, awayScore);
   }
 }

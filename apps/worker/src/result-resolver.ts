@@ -212,7 +212,7 @@ export async function resolveFinishedMatches(): Promise<void> {
   const { data: triggers, error } = await supabase
     .from('triggers')
     .select(
-      'id, match_id, strategy_id, minute, score_home, score_away, evidence_json, telegram_message_id, telegram_chat_id, strategies(desired_outcome)',
+      'id, match_id, strategy_id, minute, score_home, score_away, evidence_json, telegram_message_id, telegram_chat_id, telegram_message_text, strategies(desired_outcome)',
     )
     .is('result', null)
     .limit(50);
@@ -292,6 +292,7 @@ export async function resolveFinishedMatches(): Promise<void> {
         await resolveTrigger(trigger.id, trigger.strategy_id, 'MISS',
           (trigger as any).telegram_message_id ?? null,
           (trigger as any).telegram_chat_id ?? null,
+          (trigger as any).telegram_message_text ?? null,
           data.homeFinal, data.awayFinal);
         continue;
       }
@@ -348,6 +349,7 @@ export async function resolveFinishedMatches(): Promise<void> {
         result,
         (trigger as any).telegram_message_id as number | null,
         (trigger as any).telegram_chat_id as string | null,
+        (trigger as any).telegram_message_text as string | null,
         data.homeFinal,
         data.awayFinal,
       );
@@ -361,6 +363,7 @@ async function resolveTrigger(
   result: 'HIT' | 'MISS',
   telegramMessageId: number | null,
   telegramChatId: string | null,
+  telegramMessageText: string | null,
   homeFinal: number,
   awayFinal: number,
 ): Promise<void> {
@@ -382,8 +385,8 @@ async function resolveTrigger(
 
   await recordOutcome(strategyId, result);
 
-  // Notify via Telegram reply on the original alert message
-  if (telegramMessageId && telegramChatId) {
-    await editAlertResult(telegramChatId, telegramMessageId, result, homeFinal, awayFinal);
+  // Edit the original Telegram alert message to append HIT/MISS
+  if (telegramMessageId && telegramChatId && telegramMessageText) {
+    await editAlertResult(telegramChatId, telegramMessageId, telegramMessageText, result, homeFinal, awayFinal);
   }
 }

@@ -74,7 +74,11 @@ export const sendAlertWorker = new Worker<{
     if (sent && triggerId) {
       await supabase
         .from('triggers')
-        .update({ telegram_message_id: sent.messageId, telegram_chat_id: sent.chatId })
+        .update({
+          telegram_message_id: sent.messageId,
+          telegram_chat_id: sent.chatId,
+          telegram_message_text: sent.messageText,
+        })
         .eq('id', triggerId);
     }
   },

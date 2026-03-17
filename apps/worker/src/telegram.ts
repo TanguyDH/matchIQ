@@ -23,7 +23,7 @@ export async function sendAlert(
   match: MatchSnapshot,
   result: EvaluationResult,
   chatId?: string,
-): Promise<{ messageId: number; chatId: string } | null> {
+): Promise<{ messageId: number; chatId: string; messageText: string } | null> {
   const targetChatId = chatId ?? config.telegram.chatId;
 
   if (!targetChatId) {
@@ -39,7 +39,7 @@ export async function sendAlert(
     });
 
     console.log(`[Telegram] Alert sent for strategy "${strategyName}" (msg_id=${sent.message_id})`);
-    return { messageId: sent.message_id, chatId: targetChatId };
+    return { messageId: sent.message_id, chatId: targetChatId, messageText: message };
   } catch (error) {
     console.error('[Telegram] Failed to send alert:', error);
     throw error;
@@ -53,25 +53,25 @@ export async function sendAlert(
 export async function editAlertResult(
   chatId: string,
   messageId: number,
+  originalText: string,
   result: 'HIT' | 'MISS',
   homeFinal: number,
   awayFinal: number,
 ): Promise<void> {
   const resultLine =
     result === 'HIT'
-      ? `\n\n✅ *HIT* — Final: ${homeFinal}\\-${awayFinal}`
-      : `\n\n❌ *MISS* — Final: ${homeFinal}\\-${awayFinal}`;
+      ? `\n\n✅ *HIT* — Final: ${homeFinal}-${awayFinal}`
+      : `\n\n❌ *MISS* — Final: ${homeFinal}-${awayFinal}`;
 
   try {
-    // Fetch the original message text via getUpdates is not reliable;
-    // instead we send a reply to the original alert message.
-    await bot.sendMessage(chatId, resultLine, {
-      parse_mode: 'MarkdownV2',
-      reply_parameters: { message_id: messageId },
-    } as any);
-    console.log(`[Telegram] Result reply sent (msg_id=${messageId}): ${result}`);
+    await bot.editMessageText(originalText + resultLine, {
+      chat_id: chatId,
+      message_id: messageId,
+      parse_mode: 'Markdown',
+    });
+    console.log(`[Telegram] Message edited (msg_id=${messageId}): ${result}`);
   } catch (error) {
-    console.error('[Telegram] Failed to send result reply:', error);
+    console.error('[Telegram] Failed to edit message:', error);
   }
 }
 
