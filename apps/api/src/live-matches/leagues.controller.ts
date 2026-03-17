@@ -1,6 +1,7 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 
+
 export interface LeagueDto {
   id: number;
   name: string;
@@ -25,18 +26,26 @@ export class LeaguesController {
     const baseUrl = process.env.SPORTMONKS_BASE_URL ?? 'https://api.sportmonks.com/v3/football';
 
     try {
-      const res = await fetch(
-        `${baseUrl}/leagues?api_token=${apiKey}&include=country&per_page=150`,
-      );
+      const allRaw: any[] = [];
+      let page = 1;
+      let lastPage = 1;
 
-      if (!res.ok) {
-        return cachedLeagues ?? [];
-      }
+      do {
+        const res = await fetch(
+          `${baseUrl}/leagues?api_token=${apiKey}&include=country&per_page=50&page=${page}`,
+        );
 
-      const json = await res.json() as any;
-      const raw: any[] = json?.data ?? [];
+        if (!res.ok) break;
 
-      const leagues: LeagueDto[] = raw
+        const json = await res.json() as any;
+        const rows: any[] = json?.data ?? [];
+        allRaw.push(...rows);
+
+        lastPage = json?.pagination?.last_page ?? 1;
+        page++;
+      } while (page <= lastPage);
+
+      const leagues: LeagueDto[] = allRaw
         .map((l) => ({
           id: l.id as number,
           name: l.name as string,
