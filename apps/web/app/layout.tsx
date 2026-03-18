@@ -23,6 +23,12 @@ const dmSans = DM_Sans({
   display: 'swap',
 });
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export const metadata = {
   title: 'MatchIQ — Paris intelligents, automatisés',
   description:
