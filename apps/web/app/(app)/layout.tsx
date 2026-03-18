@@ -18,7 +18,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#0f172a] text-[#f1f5f9] font-body">
       <NavBar />
-      <main className="max-w-5xl mx-auto px-6 py-8">{children}</main>
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-8">{children}</main>
     </div>
   );
 }

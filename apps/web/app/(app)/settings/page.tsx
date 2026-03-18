@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api/client';
+import { supabase } from '@/supabase';
 
 type TelegramStatus = { linked: boolean; linkedAt?: string };
 
@@ -127,6 +128,21 @@ export default function SettingsPage() {
           </button>
         )}
       </section>
+
+      {/* Déconnexion — visible uniquement sur mobile */}
+      <div className="sm:hidden mt-6">
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#1e293b] border border-[#334155] rounded-xl text-sm text-[#f87171] hover:bg-[#f87171]/10 hover:border-[#f87171]/30 transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Déconnexion
+        </button>
+      </div>
     </div>
   );
 }
