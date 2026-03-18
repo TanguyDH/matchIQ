@@ -129,7 +129,6 @@ export default function AddRulePage() {
   const [timeMode, setTimeMode] = useState<TimeMode>('off');
   const [timeX, setTimeX] = useState('');
   const [timeY, setTimeY] = useState('');
-  const [advanced, setAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -288,13 +287,7 @@ export default function AddRulePage() {
       <div className="space-y-4">
         {/* Metric + Team Scope */}
         <div
-          className={`grid gap-3 ${
-            needsTeamScope && showTimeFilter
-              ? 'grid-cols-1 sm:grid-cols-3'
-              : needsTeamScope || showTimeFilter || showOddsTimeFilter
-                ? 'grid-cols-1 sm:grid-cols-2'
-                : 'grid-cols-1'
-          }`}
+          className="grid gap-3 grid-cols-1"
         >
           <div>
             <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
@@ -335,7 +328,7 @@ export default function AddRulePage() {
                 <span className="normal-case tracking-normal text-[#334155]">(optionnel)</span>
               </label>
               {/* Mode selector + inline inputs */}
-              <div className="flex gap-1.5 items-center">
+              <div className="flex gap-3 items-center">
                 <select
                   value={timeMode}
                   onChange={(e) => {
@@ -343,7 +336,7 @@ export default function AddRulePage() {
                     setTimeX('');
                     setTimeY('');
                   }}
-                  className="flex-1 min-w-0 bg-[#0f172a] border border-[#334155] rounded-lg px-2 py-2 text-xs text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
+                  className="flex-1 min-w-0 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
                 >
                   {TIME_MODES.map((m) => (
                     <option key={m.key} value={m.key}>
@@ -359,7 +352,7 @@ export default function AddRulePage() {
                     placeholder="X"
                     value={timeX}
                     onChange={(e) => setTimeX(e.target.value)}
-                    className="w-16 bg-[#0f172a] border border-[#334155] rounded-lg px-2 py-2 text-xs text-[#f1f5f9] text-center placeholder-[#334155] focus:outline-none focus:border-[#10b981] transition-colors"
+                    className="w-24 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] text-center placeholder-[#334155] focus:outline-none focus:border-[#10b981] transition-colors"
                   />
                 )}
                 {timeModeInfo.inputs === 2 && (
@@ -370,7 +363,7 @@ export default function AddRulePage() {
                     placeholder="Y"
                     value={timeY}
                     onChange={(e) => setTimeY(e.target.value)}
-                    className="w-16 bg-[#0f172a] border border-[#334155] rounded-lg px-2 py-2 text-xs text-[#f1f5f9] text-center placeholder-[#334155] focus:outline-none focus:border-[#10b981] transition-colors"
+                    className="w-24 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] text-center placeholder-[#334155] focus:outline-none focus:border-[#10b981] transition-colors"
                   />
                 )}
               </div>
@@ -388,14 +381,14 @@ export default function AddRulePage() {
                 Plage temporelle{' '}
                 <span className="normal-case tracking-normal text-[#334155]">(optionnel)</span>
               </label>
-              <div className="flex gap-1.5 items-center">
+              <div className="flex gap-3 items-center">
                 <select
                   value={timeMode}
                   onChange={(e) => {
                     setTimeMode(e.target.value as TimeMode);
                     setTimeX('');
                   }}
-                  className="flex-1 min-w-0 bg-[#0f172a] border border-[#334155] rounded-lg px-2 py-2 text-xs text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
+                  className="flex-1 min-w-0 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
                 >
                   {ODDS_TIME_MODES.map((m) => (
                     <option key={m.key} value={m.key}>
@@ -411,7 +404,7 @@ export default function AddRulePage() {
                     placeholder="X"
                     value={timeX}
                     onChange={(e) => setTimeX(e.target.value)}
-                    className="w-16 bg-[#0f172a] border border-[#334155] rounded-lg px-2 py-2 text-xs text-[#f1f5f9] text-center placeholder-[#334155] focus:outline-none focus:border-[#10b981] transition-colors"
+                    className="w-24 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] text-center placeholder-[#334155] focus:outline-none focus:border-[#10b981] transition-colors"
                   />
                 )}
               </div>
@@ -486,30 +479,6 @@ export default function AddRulePage() {
           </div>
         )}
 
-        {/* Advanced Mode */}
-        <div className="flex items-center justify-between pt-2 border-t border-[#334155]">
-          <span className="text-xs text-[#475569] font-mono">Mode avancé</span>
-          <div
-            onClick={() => setAdvanced((a) => !a)}
-            className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${
-              advanced ? 'bg-[#10b981]' : 'bg-[#334155]'
-            }`}
-          >
-            <div
-              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow transition-transform ${
-                advanced ? 'bg-[#0f172a] translate-x-5' : 'bg-[#64748b] translate-x-0'
-              }`}
-            />
-          </div>
-        </div>
-
-        {advanced && (
-          <div className="bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2">
-            <p className="text-xs text-[#475569] font-mono">
-              Filtres temporels — disponible en Phase 4
-            </p>
-          </div>
-        )}
 
         {saveError && <p className="text-[#f87171] text-xs font-mono">{saveError}</p>}
 
