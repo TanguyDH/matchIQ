@@ -290,9 +290,9 @@ export default function AddRulePage() {
         <div
           className={`grid gap-3 ${
             needsTeamScope && showTimeFilter
-              ? 'grid-cols-3'
+              ? 'grid-cols-1 sm:grid-cols-3'
               : needsTeamScope || showTimeFilter || showOddsTimeFilter
-                ? 'grid-cols-2'
+                ? 'grid-cols-1 sm:grid-cols-2'
                 : 'grid-cols-1'
           }`}
         >
