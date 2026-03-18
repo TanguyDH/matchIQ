@@ -286,9 +286,7 @@ export default function AddRulePage() {
       {/* ── Form fields ──────────────────────────────────────────────── */}
       <div className="space-y-4">
         {/* Metric + Team Scope */}
-        <div
-          className="grid gap-3 grid-cols-1"
-        >
+        <div className="grid gap-3 grid-cols-1">
           <div>
             <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
               Métrique
@@ -478,7 +476,6 @@ export default function AddRulePage() {
             )}
           </div>
         )}
-
 
         {saveError && <p className="text-[#f87171] text-xs font-mono">{saveError}</p>}
 
