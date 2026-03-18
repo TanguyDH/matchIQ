@@ -422,7 +422,6 @@ export default function AddRulePage() {
               )}
             </div>
           )}
-
         </div>
 
         {/* Comparator + Target Value */}
