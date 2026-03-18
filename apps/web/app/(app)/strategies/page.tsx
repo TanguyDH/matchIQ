@@ -146,7 +146,9 @@ function StrategyCard({
   };
 
   return (
-    <div className={`bg-[#1e293b] border rounded-xl transition-colors ${expanded ? 'border-[#10b981]/40' : 'border-[#334155]'}`}>
+    <div
+      className={`bg-[#1e293b] border rounded-xl transition-colors ${expanded ? 'border-[#10b981]/40' : 'border-[#334155]'}`}
+    >
       {/* Header — always visible */}
       <div className="p-4 flex items-center gap-3">
         {/* Clickable zone: chevron + name */}
@@ -159,10 +161,19 @@ function StrategyCard({
         >
           <span
             className="text-[#475569] transition-transform duration-200 flex-shrink-0"
-            style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}
+            style={{
+              transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              display: 'inline-block',
+            }}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path
+                d="M5 3l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </span>
           <div className="flex-1 min-w-0">
@@ -181,7 +192,9 @@ function StrategyCard({
               <p className="text-sm font-semibold text-[#f1f5f9] truncate">{strategy.name}</p>
             )}
             {strategy.desired_outcome && (
-              <p className="text-[11px] text-[#475569] mt-0.5 truncate">{strategy.desired_outcome}</p>
+              <p className="text-[11px] text-[#475569] mt-0.5 truncate">
+                {strategy.desired_outcome}
+              </p>
             )}
           </div>
         </div>
@@ -191,13 +204,15 @@ function StrategyCard({
           <span className="text-[11px] font-mono text-[#475569]">
             <span className="text-[#94a3b8]">{strategy.total_triggers ?? 0}</span> picks
           </span>
-          <span className={`text-[11px] font-mono font-semibold ${
-            strategy.hit_rate && parseFloat(strategy.hit_rate) >= 55
-              ? 'text-[#10b981]'
-              : strategy.hit_rate && parseFloat(strategy.hit_rate) >= 40
-                ? 'text-[#fbbf24]'
-                : 'text-[#475569]'
-          }`}>
+          <span
+            className={`text-[11px] font-mono font-semibold ${
+              strategy.hit_rate && parseFloat(strategy.hit_rate) >= 55
+                ? 'text-[#10b981]'
+                : strategy.hit_rate && parseFloat(strategy.hit_rate) >= 40
+                  ? 'text-[#fbbf24]'
+                  : 'text-[#475569]'
+            }`}
+          >
             {strategy.hit_rate ? `${parseFloat(strategy.hit_rate).toFixed(0)}%` : '—'}
           </span>
           <Toggle on={strategy.is_active} onToggle={onToggle} />
@@ -217,24 +232,37 @@ function StrategyCard({
             <p className="text-xs text-[#475569] mb-3">Aucune règle configurée</p>
           )}
 
-          {!loadingRules && rules.map((rule, idx) => (
-            <div key={rule.id}>
-              <div className="flex items-center justify-between py-2">
-                <p className="text-xs font-mono text-[#94a3b8]">{formatRule(rule)}</p>
-                <button
-                  onClick={() => handleDeleteRule(rule.id)}
-                  className="text-[#475569] hover:text-[#f87171] transition-colors ml-2 flex-shrink-0"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+          {!loadingRules &&
+            rules.map((rule, idx) => (
+              <div key={rule.id}>
+                <div className="flex items-center justify-between py-2">
+                  <p className="text-xs font-mono text-[#94a3b8]">{formatRule(rule)}</p>
+                  <button
+                    onClick={() => handleDeleteRule(rule.id)}
+                    className="text-[#475569] hover:text-[#f87171] transition-colors ml-2 flex-shrink-0"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                {idx < rules.length - 1 && (
+                  <p className="text-[10px] text-[#475569] font-mono py-0.5 uppercase tracking-widest">
+                    et
+                  </p>
+                )}
               </div>
-              {idx < rules.length - 1 && (
-                <p className="text-[10px] text-[#475569] font-mono py-0.5 uppercase tracking-widest">et</p>
-              )}
-            </div>
-          ))}
+            ))}
 
           <div className="flex gap-2 mt-4">
             <button
@@ -247,7 +275,10 @@ function StrategyCard({
               onClick={() => setShowLeagueSelector(true)}
               className="bg-[#1e293b] border border-[#334155] text-[#94a3b8] hover:text-[#f1f5f9] hover:border-[#475569] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
             >
-              🏆 {!strategy.league_ids || strategy.league_ids.length === 0 ? 'Toutes ligues' : `${strategy.league_ids.length} ligue${strategy.league_ids.length > 1 ? 's' : ''}`}
+              🏆{' '}
+              {!strategy.league_ids || strategy.league_ids.length === 0
+                ? 'Toutes ligues'
+                : `${strategy.league_ids.length} ligue${strategy.league_ids.length > 1 ? 's' : ''}`}
             </button>
           </div>
 
@@ -344,7 +375,9 @@ function StrategyRow({
 
   return (
     <>
-      <tr className={`border-b transition-colors ${expanded ? 'border-[#10b981]/20 bg-[#1e293b]/40' : 'border-[#334155] hover:bg-[#1e293b]/30'}`}>
+      <tr
+        className={`border-b transition-colors ${expanded ? 'border-[#10b981]/20 bg-[#1e293b]/40' : 'border-[#334155] hover:bg-[#1e293b]/30'}`}
+      >
         <td className="py-3 pr-4">
           <button
             type="button"
@@ -354,10 +387,19 @@ function StrategyRow({
             {/* Animated chevron */}
             <span
               className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:bg-[#334155] text-[#475569] group-hover:text-[#f1f5f9]"
-              style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-flex' }}
+              style={{
+                transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                display: 'inline-flex',
+              }}
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M4 2.5l4 3.5-4 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M4 2.5l4 3.5-4 3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </span>
 
@@ -388,13 +430,15 @@ function StrategyRow({
           <span className="text-sm font-mono text-[#94a3b8]">{strategy.total_triggers ?? 0}</span>
         </td>
         <td className="py-3" onClick={(e) => e.stopPropagation()}>
-          <span className={`text-sm font-mono font-semibold ${
-            strategy.hit_rate && parseFloat(strategy.hit_rate) >= 55
-              ? 'text-[#10b981]'
-              : strategy.hit_rate && parseFloat(strategy.hit_rate) >= 40
-                ? 'text-[#fbbf24]'
-                : 'text-[#475569]'
-          }`}>
+          <span
+            className={`text-sm font-mono font-semibold ${
+              strategy.hit_rate && parseFloat(strategy.hit_rate) >= 55
+                ? 'text-[#10b981]'
+                : strategy.hit_rate && parseFloat(strategy.hit_rate) >= 40
+                  ? 'text-[#fbbf24]'
+                  : 'text-[#475569]'
+            }`}
+          >
             {strategy.hit_rate ? `${parseFloat(strategy.hit_rate).toFixed(1)}%` : '—'}
           </span>
         </td>
