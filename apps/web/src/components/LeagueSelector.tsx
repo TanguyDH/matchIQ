@@ -283,9 +283,7 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
         {/* Selected count */}
         {selected.size > 0 && (
           <div className="px-5 pb-2 flex items-center justify-between">
-            <span className="text-xs text-[#10b981] font-mono">
-              {selected.size} selected
-            </span>
+            <span className="text-xs text-[#10b981] font-mono">{selected.size} selected</span>
             <button
               onClick={() => setSelected(new Set())}
               className="text-xs text-[#475569] hover:text-[#f87171] transition-colors"

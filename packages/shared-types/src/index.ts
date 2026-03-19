@@ -51,6 +51,25 @@ export type TimeFilter =
   | { mode: 'during_2nd_half' }
   | { mode: 'as_of_halftime' };
 
+export type MathOp = '+' | '-' | '*' | '/';
+
+export interface RuleValue {
+  kind: 'metric' | 'number';
+  // if kind === 'metric':
+  value_type?: RuleValueType;
+  metric?: string;
+  team_scope?: TeamScope | null;
+  time_filter?: TimeFilter | null;
+  // if kind === 'number':
+  number?: number;
+}
+
+export interface RuleExpression {
+  left: RuleValue;
+  op?: MathOp;
+  right?: RuleValue;
+}
+
 export interface Rule {
   id: string;
   strategy_id: string;
@@ -61,6 +80,8 @@ export interface Rule {
   team_scope: TeamScope | null;
   time_filter: TimeFilter | null;
   created_at: string;
+  lhs_json?: RuleExpression | null;
+  rhs_json?: RuleExpression | null;
 }
 
 export interface Trigger {
@@ -179,6 +200,8 @@ export interface CreateRulePayload {
   value: number;
   team_scope?: TeamScope;
   time_filter?: TimeFilter;
+  lhs_json?: RuleExpression;
+  rhs_json?: RuleExpression;
 }
 
 // ─── Comparator display ───────────────────────────────────────────────────────

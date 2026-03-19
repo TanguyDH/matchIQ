@@ -7,95 +7,103 @@ import {
   Comparator,
   COMPARATOR_LABELS,
   COMPARATORS,
-  METRICS_BY_TYPE,
   Rule,
+  RuleExpression,
+  RuleValue,
   RuleValueType,
   Strategy,
-  TEAM_SCOPES,
-  TeamScope,
   TimeFilter,
+  metricLabel,
   metricRequiresTeamScope,
 } from '@matchiq/shared-types';
 import { api } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
-import MetricDropdown from '@/components/MetricDropdown';
 import RuleChip from '@/components/RuleChip';
+import ExpressionEditor, {
+  ExprDraft,
+  RuleValueDraft,
+  TimeMode,
+  makeDefaultExpr,
+} from '@/components/ExpressionEditor';
 
-// ─── Tab config ──────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const TABS: { key: RuleValueType; label: string }[] = [
-  { key: 'IN_PLAY', label: 'In-Play' },
-  { key: 'PRE_MATCH', label: 'Pre-Match' },
-  { key: 'ODDS', label: 'Odds' },
-];
-
-// ─── Temporal range ───────────────────────────────────────────────────────────
-
-// Metrics that don't benefit from a time filter (Match Context group)
-const NO_TIME_FILTER = new Set(['match_timer', 'minutes_since_last_goal', 'league_position']);
-
-type TimeMode =
-  | 'off'
-  | 'as_of_minute'
-  | 'x_minutes_ago'
-  | 'between'
-  | 'past_x'
-  | 'since_minute'
-  | 'during_2nd_half'
-  | 'as_of_halftime';
-
-const TIME_MODES: { key: TimeMode; label: string; inputs: 0 | 1 | 2 }[] = [
-  { key: 'off', label: 'Off', inputs: 0 },
-  { key: 'as_of_minute', label: 'As of minute X', inputs: 1 },
-  { key: 'x_minutes_ago', label: 'As of X minutes ago', inputs: 1 },
-  { key: 'between', label: 'Between minutes X and Y', inputs: 2 },
-  { key: 'past_x', label: 'Past X minutes', inputs: 1 },
-  { key: 'since_minute', label: 'Since minute X', inputs: 1 },
-  { key: 'during_2nd_half', label: 'During 2nd Half', inputs: 0 },
-  { key: 'as_of_halftime', label: 'As of Half Time', inputs: 0 },
-];
-
-// Restricted set of temporal modes for ODDS tab
-const ODDS_TIME_MODES: { key: TimeMode; label: string; inputs: 0 | 1 }[] = [
-  { key: 'off', label: 'Off / Latest Odds', inputs: 0 },
-  { key: 'as_of_minute', label: 'As of minute X', inputs: 1 },
-  { key: 'x_minutes_ago', label: 'As of X minutes ago', inputs: 1 },
-  { key: 'as_of_halftime', label: 'As of Half Time', inputs: 0 },
-];
-
-function oddsTimeModeHint(mode: TimeMode, x: string): string {
-  switch (mode) {
+function buildTimeFilter(draft: RuleValueDraft): TimeFilter | undefined {
+  if (draft.timeMode === 'off') return undefined;
+  const x = parseInt(draft.timeX, 10);
+  const y = parseInt(draft.timeY, 10);
+  switch (draft.timeMode as TimeMode) {
     case 'as_of_minute':
-      return `Odds at minute ${x || 'X'}`;
     case 'x_minutes_ago':
-      return `Odds as they were ${x || 'X'} minutes ago`;
+    case 'past_x':
+    case 'since_minute':
+      return isNaN(x) ? undefined : { mode: draft.timeMode as 'as_of_minute', x };
+    case 'between':
+      return isNaN(x) || isNaN(y) ? undefined : { mode: 'between', x, y };
+    case 'during_2nd_half':
+      return { mode: 'during_2nd_half' };
     case 'as_of_halftime':
-      return `Odds at half time`;
+      return { mode: 'as_of_halftime' };
     default:
-      return '';
+      return undefined;
   }
 }
 
-function timeModeHint(mode: TimeMode, metricLabel: string, x: string, y: string): string {
-  const m = metricLabel.toLowerCase();
-  switch (mode) {
-    case 'as_of_minute':
-      return `Value of ${m} at minute ${x || 'X'}`;
-    case 'x_minutes_ago':
-      return `Value of ${m} as it was ${x || 'X'} minutes ago`;
-    case 'between':
-      return `Only count ${m} between minute ${x || 'X'} and ${y || 'Y'}`;
-    case 'past_x':
-      return `${m} accumulated over the last ${x || 'X'} minutes`;
-    case 'since_minute':
-      return `${m} since minute ${x || 'X'}`;
-    case 'during_2nd_half':
-      return `${m} in the 2nd half only`;
-    case 'as_of_halftime':
-      return `Value of ${m} at half time`;
-    default:
-      return '';
+function draftToRuleValue(draft: RuleValueDraft): RuleValue | null {
+  if (draft.kind === 'number') {
+    const n = parseFloat(draft.number);
+    if (isNaN(n)) return null;
+    return { kind: 'number', number: n };
   }
+  if (!draft.metric) return null;
+  const timeFilter = buildTimeFilter(draft);
+  return {
+    kind: 'metric',
+    value_type: draft.valueType,
+    metric: draft.metric,
+    team_scope: draft.teamScope || null,
+    time_filter: timeFilter ?? null,
+  };
+}
+
+function draftToExpression(draft: ExprDraft): RuleExpression | null {
+  const left = draftToRuleValue(draft.left);
+  if (!left) return null;
+  if (!draft.hasOp || !draft.op) return { left };
+  const right = draftToRuleValue(draft.right);
+  if (!right) return null;
+  return { left, op: draft.op as '+' | '-' | '*' | '/', right };
+}
+
+function isExprDraftValid(draft: ExprDraft): boolean {
+  if (!isValueDraftValid(draft.left)) return false;
+  if (draft.hasOp && draft.op && !isValueDraftValid(draft.right)) return false;
+  return true;
+}
+
+function isValueDraftValid(draft: RuleValueDraft): boolean {
+  if (draft.kind === 'number') return draft.number !== '' && !isNaN(parseFloat(draft.number));
+  if (!draft.metric) return false;
+  if (metricRequiresTeamScope(draft.metric) && !draft.teamScope) return false;
+  return true;
+}
+
+function formatRuleValueDraft(draft: RuleValueDraft): string {
+  if (draft.kind === 'number') return draft.number || '?';
+  if (!draft.metric) return '…';
+  const label = metricLabel(draft.metric) || draft.metric;
+  const parts: string[] = [label];
+  if (draft.teamScope) parts.push(`(${draft.teamScope})`);
+  if (draft.timeMode !== 'off') parts.push(`⏱ ${draft.timeMode}`);
+  return parts.join(' ');
+}
+
+function formatExprDraft(draft: ExprDraft): string {
+  const left = formatRuleValueDraft(draft.left);
+  if (!draft.hasOp || !draft.op) return left;
+  const opLabel = draft.op === '*' ? '×' : draft.op === '/' ? '÷' : draft.op;
+  const right = formatRuleValueDraft(draft.right);
+  return `${left} ${opLabel} ${right}`;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -105,7 +113,7 @@ export default function AddRulePage() {
   const router = useRouter();
   const { id: strategyId } = useParams<{ id: string }>();
 
-  // ── Remote state ────────────────────────────────────────────────────────
+  // Remote state
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -120,88 +128,61 @@ export default function AddRulePage() {
       .catch((e: Error) => setLoadError(e.message));
   }, [token, strategyId]);
 
-  // ── Form state ──────────────────────────────────────────────────────────
-  const [valueType, setValueType] = useState<RuleValueType>('IN_PLAY');
-  const [metric, setMetric] = useState('');
+  // Expression state
+  const [lhs, setLhs] = useState<ExprDraft>(() => makeDefaultExpr('metric', 'IN_PLAY'));
   const [comparator, setComparator] = useState<Comparator>('GTE');
-  const [targetValue, setTargetValue] = useState('');
-  const [teamScope, setTeamScope] = useState<TeamScope | ''>('');
-  const [timeMode, setTimeMode] = useState<TimeMode>('off');
-  const [timeX, setTimeX] = useState('');
-  const [timeY, setTimeY] = useState('');
+  const [rhs, setRhs] = useState<ExprDraft>(() => makeDefaultExpr('number', 'IN_PLAY'));
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const currentMetrics = METRICS_BY_TYPE[valueType];
-  const metricStillValid = currentMetrics.some((m) => m.key === metric);
-
-  useEffect(() => {
-    if (metric && !metricStillValid) {
-      setMetric('');
-      setTeamScope('');
-    }
-  }, [metric, metricStillValid]);
-
-  useEffect(() => {
-    if (metric && !metricRequiresTeamScope(metric)) setTeamScope('');
-  }, [metric]);
-
-  useEffect(() => {
-    setTimeMode('off');
-    setTimeX('');
-    setTimeY('');
-  }, [metric, valueType]);
+  const canSave = isExprDraftValid(lhs) && isExprDraftValid(rhs);
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    const numValue = parseFloat(targetValue);
-    if (!metric || targetValue === '' || isNaN(numValue)) return;
-    if (needsTeamScope && !teamScope) return;
+    if (!canSave) return;
 
-    // Build time_filter payload
-    let timeFilter: TimeFilter | undefined;
-    if ((showTimeFilter || showOddsTimeFilter) && timeMode !== 'off') {
-      const x = parseInt(timeX, 10);
-      const y = parseInt(timeY, 10);
-      switch (timeMode) {
-        case 'as_of_minute':
-        case 'x_minutes_ago':
-        case 'past_x':
-        case 'since_minute':
-          if (!isNaN(x)) timeFilter = { mode: timeMode, x };
-          break;
-        case 'between':
-          if (!isNaN(x) && !isNaN(y)) timeFilter = { mode: 'between', x, y };
-          break;
-        case 'during_2nd_half':
-        case 'as_of_halftime':
-          timeFilter = { mode: timeMode };
-          break;
-      }
-    }
+    const lhsExpr = draftToExpression(lhs);
+    const rhsExpr = draftToExpression(rhs);
+    if (!lhsExpr || !rhsExpr) return;
+
+    // Determine legacy fields from LHS (for backward compat with rule engine)
+    const lhsLeft = lhs.left;
+    const legacyMetric = lhsLeft.kind === 'metric' && lhsLeft.metric ? lhsLeft.metric : '__expr__';
+    const legacyValueType: RuleValueType =
+      lhsLeft.kind === 'metric' && lhsLeft.valueType ? lhsLeft.valueType : 'IN_PLAY';
+    const legacyTeamScope =
+      lhsLeft.kind === 'metric' && lhsLeft.teamScope ? lhsLeft.teamScope : undefined;
+    const legacyTimeFilter = lhsLeft.kind === 'metric' ? buildTimeFilter(lhsLeft) : undefined;
+    const legacyValue =
+      rhs.left.kind === 'number' && !rhs.hasOp ? parseFloat(rhs.left.number) || 0 : 0;
 
     setSaving(true);
     setSaveError(null);
     try {
-      if (strategy && valueType !== 'ODDS' && strategy.alert_type !== valueType) {
+      if (strategy && legacyValueType !== 'ODDS' && strategy.alert_type !== legacyValueType) {
         const updatedStrategy = await api.patchStrategy(token, strategyId, {
-          alert_type: valueType as AlertType,
+          alert_type: legacyValueType as AlertType,
         });
         setStrategy(updatedStrategy);
       }
 
       const rule = await api.createRule(token, strategyId, {
-        value_type: valueType,
-        metric,
+        value_type: legacyValueType,
+        metric: legacyMetric,
         comparator,
-        value: numValue,
-        ...(needsTeamScope && teamScope ? { team_scope: teamScope } : {}),
-        ...(timeFilter ? { time_filter: timeFilter } : {}),
+        value: legacyValue,
+        ...(legacyTeamScope ? { team_scope: legacyTeamScope } : {}),
+        ...(legacyTimeFilter ? { time_filter: legacyTimeFilter } : {}),
+        lhs_json: lhsExpr,
+        rhs_json: rhsExpr,
       });
       setRules((prev) => [...prev, rule]);
-      setMetric('');
-      setTargetValue('');
-      setTeamScope('');
+
+      // Reset form
+      setLhs(makeDefaultExpr('metric', 'IN_PLAY'));
+      setRhs(makeDefaultExpr('number', 'IN_PLAY'));
+      setComparator('GTE');
     } catch (e) {
       setSaveError((e as Error).message);
     } finally {
@@ -212,38 +193,11 @@ export default function AddRulePage() {
   const handleDeleteRule = async (ruleId: string) => {
     try {
       await api.deleteRule(token, ruleId);
-      const updatedRules = rules.filter((r) => r.id !== ruleId);
-      setRules(updatedRules);
-
-      if (strategy && updatedRules.length > 0) {
-        const ruleValueTypes = updatedRules.map((r) => r.value_type);
-        const allSameType = ruleValueTypes.every((t) => t === ruleValueTypes[0]);
-        const firstType = ruleValueTypes[0];
-        if (allSameType && firstType !== 'ODDS' && strategy.alert_type !== firstType) {
-          const updatedStrategy = await api.patchStrategy(token, strategyId, {
-            alert_type: firstType as AlertType,
-          });
-          setStrategy(updatedStrategy);
-        }
-      }
+      setRules((prev) => prev.filter((r) => r.id !== ruleId));
     } catch (e) {
       setSaveError((e as Error).message);
     }
   };
-
-  // ── Derived ─────────────────────────────────────────────────────────────
-  const previewLabel = metric ? currentMetrics.find((m) => m.key === metric)?.label : undefined;
-  const needsTeamScope = metric ? metricRequiresTeamScope(metric) : false;
-  const showTimeFilter = valueType === 'IN_PLAY' && metric !== '' && !NO_TIME_FILTER.has(metric);
-  const showOddsTimeFilter = valueType === 'ODDS' && metric.startsWith('live_');
-  const timeModeInfo = showOddsTimeFilter
-    ? (ODDS_TIME_MODES.find((m) => m.key === timeMode) ?? ODDS_TIME_MODES[0])
-    : TIME_MODES.find((m) => m.key === timeMode)!;
-  const canSave =
-    metric !== '' &&
-    targetValue !== '' &&
-    !isNaN(parseFloat(targetValue)) &&
-    (!needsTeamScope || teamScope !== '');
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
@@ -265,215 +219,48 @@ export default function AddRulePage() {
 
       {loadError && <p className="text-[#f87171] text-xs font-mono mb-3">{loadError}</p>}
 
-      {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="flex gap-1 bg-[#0f172a] border border-[#334155] rounded-lg p-1 mb-5">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setValueType(tab.key)}
-            className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-              valueType === tab.key
-                ? 'bg-[#1e293b] text-[#10b981]'
-                : 'text-[#475569] hover:text-[#94a3b8]'
-            }`}
+      {/* ── Expression builder ───────────────────────────────────────── */}
+      <div className="space-y-3">
+        {/* LHS */}
+        <ExpressionEditor
+          label="Left side"
+          value={lhs}
+          onChange={setLhs}
+          showTimeFilter
+          metricOnly
+        />
+
+        {/* Comparator */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-px bg-[#334155]" />
+          <select
+            value={comparator}
+            onChange={(e) => setComparator(e.target.value as Comparator)}
+            className="bg-[#1e293b] border border-[#334155] rounded-lg px-4 py-2 text-sm font-mono text-[#fbbf24] appearance-none focus:outline-none focus:border-[#fbbf24]/50 transition-colors cursor-pointer"
           >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Form fields ──────────────────────────────────────────────── */}
-      <div className="space-y-4">
-        {/* Metric + Team Scope */}
-        <div className="grid gap-3 grid-cols-1">
-          <div>
-            <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-              Metric
-            </label>
-            <MetricDropdown metrics={currentMetrics} selected={metric} onChange={setMetric} />
-            <p className="text-[10px] text-[#475569] mt-1.5">Value to monitor</p>
-          </div>
-
-          {needsTeamScope && (
-            <div>
-              <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-                Team
-              </label>
-              <select
-                value={teamScope}
-                onChange={(e) => setTeamScope(e.target.value as TeamScope | '')}
-                required
-                className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
-              >
-                <option value="">Select…</option>
-                {TEAM_SCOPES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[10px] text-[#475569] mt-1.5">
-                Team whose {previewLabel?.toLowerCase() || 'metric'} is counted
-              </p>
-            </div>
-          )}
-
-          {showTimeFilter && (
-            <div>
-              <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-                Time range{' '}
-                <span className="normal-case tracking-normal text-[#334155]">(optional)</span>
-              </label>
-              {/* Mode selector + inline inputs */}
-              <div className="flex gap-3 items-center">
-                <select
-                  value={timeMode}
-                  onChange={(e) => {
-                    setTimeMode(e.target.value as TimeMode);
-                    setTimeX('');
-                    setTimeY('');
-                  }}
-                  className="flex-1 min-w-0 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
-                >
-                  {TIME_MODES.map((m) => (
-                    <option key={m.key} value={m.key}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-                {timeModeInfo.inputs >= 1 && (
-                  <input
-                    type="number"
-                    min={0}
-                    max={120}
-                    placeholder="X"
-                    value={timeX}
-                    onChange={(e) => setTimeX(e.target.value)}
-                    className="w-24 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] text-center placeholder-[#334155] focus:outline-none focus:border-[#10b981] transition-colors"
-                  />
-                )}
-                {timeModeInfo.inputs === 2 && (
-                  <input
-                    type="number"
-                    min={0}
-                    max={120}
-                    placeholder="Y"
-                    value={timeY}
-                    onChange={(e) => setTimeY(e.target.value)}
-                    className="w-24 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] text-center placeholder-[#334155] focus:outline-none focus:border-[#10b981] transition-colors"
-                  />
-                )}
-              </div>
-              {timeMode !== 'off' && (
-                <p className="text-[10px] text-[#475569] mt-1.5">
-                  {timeModeHint(timeMode, previewLabel || 'metric', timeX, timeY)}
-                </p>
-              )}
-            </div>
-          )}
-
-          {showOddsTimeFilter && (
-            <div>
-              <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-                Time range{' '}
-                <span className="normal-case tracking-normal text-[#334155]">(optional)</span>
-              </label>
-              <div className="flex gap-3 items-center">
-                <select
-                  value={timeMode}
-                  onChange={(e) => {
-                    setTimeMode(e.target.value as TimeMode);
-                    setTimeX('');
-                  }}
-                  className="flex-1 min-w-0 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
-                >
-                  {ODDS_TIME_MODES.map((m) => (
-                    <option key={m.key} value={m.key}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-                {timeModeInfo.inputs >= 1 && (
-                  <input
-                    type="number"
-                    min={0}
-                    max={120}
-                    placeholder="X"
-                    value={timeX}
-                    onChange={(e) => setTimeX(e.target.value)}
-                    className="w-24 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] text-center placeholder-[#334155] focus:outline-none focus:border-[#10b981] transition-colors"
-                  />
-                )}
-              </div>
-              {timeMode !== 'off' && (
-                <p className="text-[10px] text-[#475569] mt-1.5">
-                  {oddsTimeModeHint(timeMode, timeX)}
-                </p>
-              )}
-            </div>
-          )}
+            {COMPARATORS.map((c) => (
+              <option key={c} value={c}>
+                {COMPARATOR_LABELS[c]}
+              </option>
+            ))}
+          </select>
+          <div className="flex-1 h-px bg-[#334155]" />
         </div>
 
-        {/* Comparator + Target Value */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-              Comparator
-            </label>
-            <select
-              value={comparator}
-              onChange={(e) => setComparator(e.target.value as Comparator)}
-              className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
-            >
-              {COMPARATORS.map((c) => (
-                <option key={c} value={c}>
-                  {COMPARATOR_LABELS[c]}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-              Target value
-            </label>
-            <input
-              type="number"
-              value={targetValue}
-              onChange={(e) => setTargetValue(e.target.value)}
-              placeholder="0"
-              className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
-            />
-          </div>
-        </div>
+        {/* RHS */}
+        <ExpressionEditor label="Right side" value={rhs} onChange={setRhs} showTimeFilter={false} />
 
         {/* Preview */}
-        {previewLabel && (
+        {canSave && (
           <div className="bg-[#0f172a] border border-[#334155] rounded-lg px-4 py-3">
-            <p className="text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1">
+            <p className="text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
               Preview
             </p>
-            <p className="text-sm font-mono">
-              <span className="text-[#10b981]">{previewLabel}</span>{' '}
-              {needsTeamScope && teamScope && (
-                <span className="text-[#a78bfa]">
-                  ({TEAM_SCOPES.find((s) => s.value === teamScope)?.label}){' '}
-                </span>
-              )}
+            <p className="text-sm font-mono leading-relaxed">
+              <span className="text-[#10b981]">{formatExprDraft(lhs)}</span>{' '}
               <span className="text-[#fbbf24]">{COMPARATOR_LABELS[comparator]}</span>{' '}
-              <span className="text-[#60a5fa]">{targetValue || '…'}</span>
+              <span className="text-[#60a5fa]">{formatExprDraft(rhs)}</span>
             </p>
-            {showTimeFilter && timeMode !== 'off' && (
-              <p className="text-[10px] text-[#f59e0b] font-mono mt-1.5">
-                ⏱ {timeModeHint(timeMode, previewLabel ?? '', timeX, timeY)}
-              </p>
-            )}
-            {showOddsTimeFilter && timeMode !== 'off' && (
-              <p className="text-[10px] text-[#f59e0b] font-mono mt-1.5">
-                ⏱ {oddsTimeModeHint(timeMode, timeX)}
-              </p>
-            )}
           </div>
         )}
 

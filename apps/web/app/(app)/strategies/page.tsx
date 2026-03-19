@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Strategy, Rule, TimeFilter, COMPARATOR_LABELS, TEAM_SCOPES, metricLabel } from '@matchiq/shared-types';
+import {
+  Strategy,
+  Rule,
+  TimeFilter,
+  COMPARATOR_LABELS,
+  TEAM_SCOPES,
+  RuleExpression,
+  RuleValue,
+  metricLabel,
+} from '@matchiq/shared-types';
 import { api } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
 import Toggle from '@/components/Toggle';
@@ -60,20 +69,52 @@ function ActionsMenu({ onDelete, onRename }: { onDelete: () => void; onRename: (
 
 function formatTimeFilter(tf: TimeFilter): string {
   switch (tf.mode) {
-    case 'as_of_minute': return `@ min ${tf.x}`;
-    case 'x_minutes_ago': return `${tf.x} min ago`;
-    case 'between': return `min ${tf.x}–${tf.y}`;
-    case 'past_x': return `last ${tf.x} min`;
-    case 'since_minute': return `since min ${tf.x}`;
-    case 'during_2nd_half': return `2nd half`;
-    case 'as_of_halftime': return `@ HT`;
-    default: return '';
+    case 'as_of_minute':
+      return `@ min ${tf.x}`;
+    case 'x_minutes_ago':
+      return `${tf.x} min ago`;
+    case 'between':
+      return `min ${tf.x}–${tf.y}`;
+    case 'past_x':
+      return `last ${tf.x} min`;
+    case 'since_minute':
+      return `since min ${tf.x}`;
+    case 'during_2nd_half':
+      return `2nd half`;
+    case 'as_of_halftime':
+      return `@ HT`;
+    default:
+      return '';
   }
 }
 
+function formatRuleValue(rv: RuleValue): string {
+  if (rv.kind === 'number') return String(rv.number ?? '?');
+  if (!rv.metric) return '?';
+  const label = metricLabel(rv.metric);
+  const parts: string[] = [label];
+  if (rv.team_scope) parts.push(`(${rv.team_scope})`);
+  if (rv.time_filter && rv.time_filter.mode !== 'off') {
+    parts.push(`⏱ ${formatTimeFilter(rv.time_filter)}`);
+  }
+  return parts.join(' ');
+}
+
+function formatExpression(expr: RuleExpression): string {
+  const left = formatRuleValue(expr.left);
+  if (!expr.op || !expr.right) return left;
+  const opLabel = expr.op === '*' ? '×' : expr.op === '/' ? '÷' : expr.op;
+  return `${left} ${opLabel} ${formatRuleValue(expr.right)}`;
+}
+
 function formatRule(rule: Rule): string {
-  const metric = metricLabel(rule.metric);
   const comparator = COMPARATOR_LABELS[rule.comparator];
+
+  if (rule.lhs_json && rule.rhs_json) {
+    return `${formatExpression(rule.lhs_json)} ${comparator} ${formatExpression(rule.rhs_json)}`;
+  }
+
+  const metric = metricLabel(rule.metric);
   const teamScope = rule.team_scope
     ? TEAM_SCOPES.find((t) => t.value === rule.team_scope)?.label
     : null;
@@ -685,9 +726,7 @@ export default function StrategiesPage() {
             onClick={() => setShowGlobalSelector(true)}
             className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors"
           >
-            {defaultLeagueIds.length === 0
-              ? 'All'
-              : `${defaultLeagueIds.length} selected`}
+            {defaultLeagueIds.length === 0 ? 'All' : `${defaultLeagueIds.length} selected`}
             {' ↗'}
           </button>
         </div>

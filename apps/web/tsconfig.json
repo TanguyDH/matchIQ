@@ -5,17 +5,11 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "jsx": "preserve",
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "baseUrl": ".",
     "allowJs": true,
@@ -28,12 +22,6 @@
       }
     ]
   },
-  "include": [
-    "app/**/*",
-    "src/**/*",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["app/**/*", "src/**/*", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

@@ -35,6 +35,8 @@ export const CreateRuleSchema = z.object({
     ])
     .optional(),
   time_filter: TimeFilterSchema.optional(),
+  lhs_json: z.any().optional(),
+  rhs_json: z.any().optional(),
 });
 
 export type CreateRuleDto = z.infer<typeof CreateRuleSchema>;

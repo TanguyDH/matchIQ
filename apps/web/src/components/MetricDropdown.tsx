@@ -74,9 +74,7 @@ export default function MetricDropdown({
           />
 
           <div className="overflow-y-auto flex-1">
-            {grouped.length === 0 && (
-              <p className="px-3 py-3 text-xs text-[#475569]">No results</p>
-            )}
+            {grouped.length === 0 && <p className="px-3 py-3 text-xs text-[#475569]">No results</p>}
             {grouped.map(([group, items]) => (
               <div key={group}>
                 <p className="px-3 pt-2 pb-0.5 text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-widest">

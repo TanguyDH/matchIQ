@@ -24,6 +24,7 @@
 ✅ HIT/MISS resolution after match finish (`result-resolver.ts` + `outcome-evaluator.ts`)
 ✅ Per-user Telegram notifications
 ✅ Per-strategy league filter + global default league selection
+✅ Math expression rules (LHS/RHS can combine two values with +, -, ×, ÷)
 
 ---
 
@@ -67,7 +68,7 @@
 │   │   │   ├── (auth)/       # login, signup
 │   │   │   └── (app)/        # strategies, live (auth-guarded)
 │   │   └── src/
-│   │       ├── components/   # NavBar, Toggle, MetricDropdown, RuleChip
+│   │       ├── components/   # NavBar, Toggle, MetricDropdown, RuleChip, ExpressionEditor
 │   │       ├── context/      # AuthContext
 │   │       ├── api/          # client.ts
 │   │       └── supabase.ts
@@ -315,7 +316,78 @@ API_PORT=3000
 
 ---
 
-## 10) Known Limitations
+## 10) Math Expression Rules
+
+Rules support combining two values with a math operator on either side of the comparator.
+
+### Data Model
+
+```typescript
+type MathOp = '+' | '-' | '*' | '/';
+
+interface RuleValue {
+  kind: 'metric' | 'number';
+  // if kind === 'metric':
+  value_type?: RuleValueType;
+  metric?: string;
+  team_scope?: TeamScope | null;
+  time_filter?: TimeFilter | null;
+  // if kind === 'number':
+  number?: number;
+}
+
+interface RuleExpression {
+  left: RuleValue;
+  op?: MathOp;         // present only when combining two values
+  right?: RuleValue;   // present only when op is set
+}
+```
+
+New nullable columns on `rules` table: `lhs_json JSONB`, `rhs_json JSONB`.
+
+### Backward Compatibility
+
+- Old rules (no `lhs_json`/`rhs_json`): rule engine uses `metric` + `value` fields.
+- New rules: `lhs_json`/`rhs_json` always set. `metric` = primary metric (or `'__expr__'`), `value` = RHS number (or `0`).
+- Rule engine: if `lhs_json` present → evaluate expression; else fall back to `metric` + `team_scope` + `time_filter`.
+
+### Rule Engine Evaluation
+
+```
+actual = evaluateExpression(rule.lhs_json) or extractMetricValue(rule)
+target = evaluateExpression(rule.rhs_json) ?? rule.value
+passed = evaluateComparator(rule.comparator, actual, target)
+```
+
+`evaluateExpression()` resolves each `RuleValue` (metric lookup or plain number) then applies `op`.
+Division by zero → rule fails (returns `null`).
+
+### UI
+
+**Component:** `apps/web/src/components/ExpressionEditor.tsx`
+- `ExpressionEditor` — renders one side (LHS or RHS)
+- `RuleValueEditor` — inner component: kind toggle (Metric/Number), metric dropdown, team scope, time filter
+- Exports: `ExprDraft`, `RuleValueDraft`, `ExpressionEditor`, `makeDefaultExpr`
+
+**Page:** `apps/web/app/(app)/strategies/[id]/rules/add/page.tsx`
+- 3-step layout: `[LHS expr] [comparator] [RHS expr]`
+- Always saves `lhs_json` + `rhs_json`; also sets legacy fields for backward compat
+
+### Files Modified
+| File | Change |
+|---|---|
+| `packages/shared-types/src/index.ts` | Added `MathOp`, `RuleValue`, `RuleExpression`; extended `Rule` + `CreateRulePayload` |
+| `packages/rule-engine/src/index.ts` | `evaluateRuleValue()`, `evaluateExpression()`, updated `evaluateStrategy()` |
+| `apps/api/src/rules/dto/create-rule.dto.ts` | `lhs_json`, `rhs_json` optional fields |
+| `supabase/migrations/20260319000001_rules_expression.sql` | ALTER TABLE rules ADD lhs_json, rhs_json |
+| `apps/web/src/components/ExpressionEditor.tsx` | New component |
+| `apps/web/app/(app)/strategies/[id]/rules/add/page.tsx` | Rewritten with 3-step builder |
+| `apps/web/src/components/RuleChip.tsx` | Expression display |
+| `apps/web/app/(app)/strategies/page.tsx` | `formatRule()` expression support |
+
+---
+
+## 11) Known Limitations
 
 - **xG**: Requires "Advanced xG" add-on (403 Forbidden without it)
 - **Exchange Matched Amount**: Requires Betfair API (not integrated)

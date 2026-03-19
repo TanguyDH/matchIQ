@@ -30,7 +30,15 @@ function useCountUp(target: number, duration: number, trigger: boolean) {
 const LIVE_METRICS = [
   { key: 'goals', label: 'Total goals', current: 3, threshold: 2.5, max: 6, unit: '', met: true },
   { key: 'corners', label: 'Corners', current: 9, threshold: 8, max: 15, unit: '', met: true },
-  { key: 'shots', label: 'Shots on target', current: 7, threshold: 5, max: 12, unit: '', met: true },
+  {
+    key: 'shots',
+    label: 'Shots on target',
+    current: 7,
+    threshold: 5,
+    max: 12,
+    unit: '',
+    met: true,
+  },
   {
     key: 'poss',
     label: 'PSG Possession',
@@ -116,7 +124,7 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "I analyse 10x more live matches than before, without watching each one. MatchIQ does the monitoring for me.",
+      'I analyse 10x more live matches than before, without watching each one. MatchIQ does the monitoring for me.',
     author: 'Sarah L.',
     role: 'Independent analyst • Bordeaux',
     stat: '+34%',
@@ -657,8 +665,8 @@ export default function LandingPage() {
           </h2>
 
           <p className="text-base text-[#94a3b8] max-w-md mx-auto mb-12">
-            Hundreds of opportunities play out live every day. MatchIQ tells you which one to take
-            — at the exact moment it appears.
+            Hundreds of opportunities play out live every day. MatchIQ tells you which one to take —
+            at the exact moment it appears.
           </p>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
@@ -677,9 +685,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <p className="mt-8 text-xs text-[#334155]">
-            No credit card required • Instant access
-          </p>
+          <p className="mt-8 text-xs text-[#334155]">No credit card required • Instant access</p>
         </div>
       </section>
 

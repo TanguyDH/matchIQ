@@ -5,7 +5,10 @@ import type {
   Comparator,
   EvaluationResult,
   MatchSnapshot,
+  MathOp,
   Rule,
+  RuleExpression,
+  RuleValue,
   StrategyWithRules,
   TeamScope,
 } from '@matchiq/shared-types';
@@ -32,7 +35,9 @@ export function evaluateStrategy(
 
   // AND logic: all rules must pass
   for (const rule of strategy.rules) {
-    const actual = extractMetricValue(rule, match, timeFilteredValues);
+    const actual = rule.lhs_json
+      ? evaluateExpression(rule.lhs_json, match, timeFilteredValues)
+      : extractMetricValue(rule, match, timeFilteredValues);
 
     // If we can't extract the value, the rule fails
     if (actual === null) {
@@ -43,14 +48,18 @@ export function evaluateStrategy(
       };
     }
 
-    const passed = evaluateComparator(rule.comparator, actual, rule.value);
+    const target = rule.rhs_json
+      ? (evaluateExpression(rule.rhs_json, match, timeFilteredValues) ?? rule.value)
+      : rule.value;
+
+    const passed = evaluateComparator(rule.comparator, actual, target);
 
     if (passed) {
       matchedRules.push({
         ruleId: rule.id,
         metric: rule.metric,
         comparator: rule.comparator,
-        target: rule.value,
+        target,
         actual,
       });
     } else {
@@ -273,6 +282,61 @@ function extractWithTeamScope(
       return 0; // Draw
     }
 
+    default:
+      return null;
+  }
+}
+
+/**
+ * Evaluates a single RuleValue to a number.
+ */
+function evaluateRuleValue(
+  rv: RuleValue,
+  match: MatchSnapshot,
+  timeFilteredValues?: Map<string, number>,
+): number | null {
+  if (rv.kind === 'number') return rv.number ?? null;
+  if (rv.kind === 'metric' && rv.metric && rv.value_type) {
+    const pseudoRule: Rule = {
+      id: '',
+      strategy_id: '',
+      value_type: rv.value_type,
+      metric: rv.metric,
+      comparator: 'GTE',
+      value: 0,
+      team_scope: rv.team_scope ?? null,
+      time_filter: rv.time_filter ?? null,
+      created_at: '',
+    };
+    return extractMetricValue(pseudoRule, match, timeFilteredValues);
+  }
+  return null;
+}
+
+/**
+ * Evaluates a RuleExpression to a number.
+ */
+function evaluateExpression(
+  expr: RuleExpression,
+  match: MatchSnapshot,
+  timeFilteredValues?: Map<string, number>,
+): number | null {
+  const leftVal = evaluateRuleValue(expr.left, match, timeFilteredValues);
+  if (leftVal === null) return null;
+  if (!expr.op || !expr.right) return leftVal;
+
+  const rightVal = evaluateRuleValue(expr.right, match, timeFilteredValues);
+  if (rightVal === null) return null;
+
+  switch (expr.op) {
+    case '+':
+      return leftVal + rightVal;
+    case '-':
+      return leftVal - rightVal;
+    case '*':
+      return leftVal * rightVal;
+    case '/':
+      return rightVal === 0 ? null : leftVal / rightVal;
     default:
       return null;
   }
