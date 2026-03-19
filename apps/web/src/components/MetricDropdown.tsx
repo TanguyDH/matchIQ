@@ -57,7 +57,7 @@ export default function MetricDropdown({
         className="w-full flex items-center justify-between bg-[#1e293b] border border-[#334155] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] transition-colors"
       >
         <span className={selectedLabel ? 'text-[#f1f5f9]' : 'text-[#475569]'}>
-          {selectedLabel ?? 'Sélectionner une métrique…'}
+          {selectedLabel ?? 'Select a metric…'}
         </span>
         <span className="text-[#475569]">▾</span>
       </button>
@@ -67,7 +67,7 @@ export default function MetricDropdown({
           <input
             ref={inputRef}
             type="text"
-            placeholder="Rechercher…"
+            placeholder="Search…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="sticky top-0 bg-[#0f172a] border-b border-[#334155] px-3 py-2 text-xs text-[#f1f5f9] placeholder-[#475569] focus:outline-none rounded-t-lg"
@@ -75,7 +75,7 @@ export default function MetricDropdown({
 
           <div className="overflow-y-auto flex-1">
             {grouped.length === 0 && (
-              <p className="px-3 py-3 text-xs text-[#475569]">Aucun résultat</p>
+              <p className="px-3 py-3 text-xs text-[#475569]">No results</p>
             )}
             {grouped.map(([group, items]) => (
               <div key={group}>

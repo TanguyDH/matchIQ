@@ -259,7 +259,7 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
       <div className="relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <h2 className="text-sm font-semibold text-[#f1f5f9]">Sélectionner les ligues</h2>
+          <h2 className="text-sm font-semibold text-[#f1f5f9]">Select leagues</h2>
           <button
             onClick={onClose}
             className="text-[#475569] hover:text-[#f1f5f9] transition-colors text-lg"
@@ -273,7 +273,7 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
           <input
             ref={inputRef}
             type="text"
-            placeholder="Rechercher une ligue ou un pays…"
+            placeholder="Search a league or country…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
@@ -284,13 +284,13 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
         {selected.size > 0 && (
           <div className="px-5 pb-2 flex items-center justify-between">
             <span className="text-xs text-[#10b981] font-mono">
-              {selected.size} sélectionnée{selected.size > 1 ? 's' : ''}
+              {selected.size} selected
             </span>
             <button
               onClick={() => setSelected(new Set())}
               className="text-xs text-[#475569] hover:text-[#f87171] transition-colors"
             >
-              Tout désélectionner
+              Deselect all
             </button>
           </div>
         )}
@@ -298,9 +298,9 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
         {/* List */}
         <div className="overflow-y-auto flex-1 px-2 pb-2">
           {loading ? (
-            <div className="py-8 text-center text-xs text-[#475569] font-mono">Chargement…</div>
+            <div className="py-8 text-center text-xs text-[#475569] font-mono">Loading…</div>
           ) : groups.length === 0 ? (
-            <div className="py-8 text-center text-xs text-[#475569]">Aucune ligue trouvée</div>
+            <div className="py-8 text-center text-xs text-[#475569]">No leagues found</div>
           ) : (
             groups.map((group) => {
               const isOpen = !collapsed.has(group.code);
@@ -401,13 +401,13 @@ export default function LeagueSelector({ token, selectedIds, onSave, onClose }: 
             onClick={() => onSave([])}
             className="flex-1 py-2 rounded-lg text-xs font-medium text-[#475569] border border-[#334155] hover:text-[#f1f5f9] transition-colors"
           >
-            Toutes les ligues
+            All leagues
           </button>
           <button
             onClick={() => onSave(Array.from(selected))}
             className="flex-1 py-2 rounded-lg text-xs font-semibold bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] transition-colors"
           >
-            Sauvegarder
+            Save
           </button>
         </div>
       </div>

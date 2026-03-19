@@ -65,7 +65,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-2xl font-display font-semibold text-[#f1f5f9] mb-8">Paramètres</h1>
+      <h1 className="text-2xl font-display font-semibold text-[#f1f5f9] mb-8">Settings</h1>
 
       <section className="bg-[#1e293b] border border-[#334155] rounded-xl p-6">
         <div className="flex items-center gap-3 mb-1">
@@ -90,10 +90,10 @@ export default function SettingsPage() {
               strokeLinejoin="round"
             />
           </svg>
-          <h2 className="text-base font-medium text-[#f1f5f9]">Notifications Telegram</h2>
+          <h2 className="text-base font-medium text-[#f1f5f9]">Telegram Notifications</h2>
         </div>
         <p className="text-sm text-[#64748b] mb-5">
-          Connectez votre Telegram pour recevoir vos alertes de stratégies dans votre canal privé.
+          Connect your Telegram to receive strategy alerts in your private channel.
         </p>
 
         {loading ? (
@@ -102,13 +102,13 @@ export default function SettingsPage() {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-2 text-sm text-[#10b981] font-medium">
               <span className="w-2 h-2 rounded-full bg-[#10b981]" />
-              Telegram connecté
+              Telegram connected
             </span>
             <button
               onClick={handleDisconnect}
               className="text-xs text-[#475569] hover:text-[#f87171] transition-colors"
             >
-              Déconnecter
+              Disconnect
             </button>
           </div>
         ) : (
@@ -120,16 +120,16 @@ export default function SettingsPage() {
             {connecting ? (
               <>
                 <span className="w-3.5 h-3.5 border-2 border-[#38bdf8]/30 border-t-[#38bdf8] rounded-full animate-spin" />
-                En attente de connexion…
+                Waiting for connection…
               </>
             ) : (
-              'Connecter Telegram'
+              'Connect Telegram'
             )}
           </button>
         )}
       </section>
 
-      {/* Déconnexion — visible uniquement sur mobile */}
+      {/* Sign out — mobile only */}
       <div className="sm:hidden mt-6">
         <button
           onClick={() => supabase.auth.signOut()}
@@ -149,7 +149,7 @@ export default function SettingsPage() {
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
-          Déconnexion
+          Sign out
         </button>
       </div>
     </div>

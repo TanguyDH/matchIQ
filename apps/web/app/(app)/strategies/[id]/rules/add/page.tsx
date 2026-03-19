@@ -25,8 +25,8 @@ import RuleChip from '@/components/RuleChip';
 
 const TABS: { key: RuleValueType; label: string }[] = [
   { key: 'IN_PLAY', label: 'In-Play' },
-  { key: 'PRE_MATCH', label: 'Pré-Match' },
-  { key: 'ODDS', label: 'Cotes' },
+  { key: 'PRE_MATCH', label: 'Pre-Match' },
+  { key: 'ODDS', label: 'Odds' },
 ];
 
 // ─── Temporal range ───────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@ export default function AddRulePage() {
         <span className="text-xs text-[#475569] font-mono">
           {strategy?.name ?? '…'}
           <span className="text-[#334155] mx-1.5">/</span>
-          <span className="text-[#10b981]">Ajouter une règle</span>
+          <span className="text-[#10b981]">Add a rule</span>
         </span>
       </div>
 
@@ -289,16 +289,16 @@ export default function AddRulePage() {
         <div className="grid gap-3 grid-cols-1">
           <div>
             <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-              Métrique
+              Metric
             </label>
             <MetricDropdown metrics={currentMetrics} selected={metric} onChange={setMetric} />
-            <p className="text-[10px] text-[#475569] mt-1.5">Valeur à surveiller</p>
+            <p className="text-[10px] text-[#475569] mt-1.5">Value to monitor</p>
           </div>
 
           {needsTeamScope && (
             <div>
               <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-                Équipe
+                Team
               </label>
               <select
                 value={teamScope}
@@ -306,7 +306,7 @@ export default function AddRulePage() {
                 required
                 className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
               >
-                <option value="">Sélectionner…</option>
+                <option value="">Select…</option>
                 {TEAM_SCOPES.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
@@ -314,7 +314,7 @@ export default function AddRulePage() {
                 ))}
               </select>
               <p className="text-[10px] text-[#475569] mt-1.5">
-                Équipe dont la {previewLabel?.toLowerCase() || 'métrique'} est comptée
+                Team whose {previewLabel?.toLowerCase() || 'metric'} is counted
               </p>
             </div>
           )}
@@ -322,8 +322,8 @@ export default function AddRulePage() {
           {showTimeFilter && (
             <div>
               <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-                Plage temporelle{' '}
-                <span className="normal-case tracking-normal text-[#334155]">(optionnel)</span>
+                Time range{' '}
+                <span className="normal-case tracking-normal text-[#334155]">(optional)</span>
               </label>
               {/* Mode selector + inline inputs */}
               <div className="flex gap-3 items-center">
@@ -376,8 +376,8 @@ export default function AddRulePage() {
           {showOddsTimeFilter && (
             <div>
               <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-                Plage temporelle{' '}
-                <span className="normal-case tracking-normal text-[#334155]">(optionnel)</span>
+                Time range{' '}
+                <span className="normal-case tracking-normal text-[#334155]">(optional)</span>
               </label>
               <div className="flex gap-3 items-center">
                 <select
@@ -419,7 +419,7 @@ export default function AddRulePage() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-              Comparateur
+              Comparator
             </label>
             <select
               value={comparator}
@@ -436,7 +436,7 @@ export default function AddRulePage() {
 
           <div>
             <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-              Valeur cible
+              Target value
             </label>
             <input
               type="number"
@@ -452,7 +452,7 @@ export default function AddRulePage() {
         {previewLabel && (
           <div className="bg-[#0f172a] border border-[#334155] rounded-lg px-4 py-3">
             <p className="text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1">
-              Aperçu
+              Preview
             </p>
             <p className="text-sm font-mono">
               <span className="text-[#10b981]">{previewLabel}</span>{' '}
@@ -485,7 +485,7 @@ export default function AddRulePage() {
           disabled={!canSave || saving}
           className="w-full bg-[#10b981] hover:bg-[#34d399] disabled:bg-[#334155] disabled:text-[#475569] text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.35)]"
         >
-          {saving ? 'Enregistrement…' : 'Enregistrer la règle'}
+          {saving ? 'Saving…' : 'Save rule'}
         </button>
       </div>
 
@@ -493,7 +493,7 @@ export default function AddRulePage() {
       {rules.length > 0 && (
         <div className="mt-6 pt-5 border-t border-[#334155]">
           <p className="text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-3">
-            Règles actuelles <span className="text-[#334155]">({rules.length})</span>
+            Current rules <span className="text-[#334155]">({rules.length})</span>
           </p>
           <div className="space-y-2">
             {rules.map((rule) => (

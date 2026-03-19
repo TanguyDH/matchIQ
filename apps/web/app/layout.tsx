@@ -30,9 +30,9 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: 'MatchIQ — Paris intelligents, automatisés',
+  title: 'MatchIQ — Smart, automated betting',
   description:
-    'Surveillez chaque match en direct et déclenchez vos stratégies de paris automatiquement — au bon moment, à chaque fois.',
+    'Monitor every match live and trigger your betting strategies automatically — at the right moment, every time.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

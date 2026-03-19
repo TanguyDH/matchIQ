@@ -49,7 +49,7 @@ export default function LoginPage() {
         <div className="text-center mb-10">
           <span className="font-display text-4xl text-[#10b981] tracking-wider">MATCHIQ</span>
           <p className="text-xs text-[#475569] font-mono mt-2 tracking-wider uppercase">
-            Connexion à votre compte
+            Sign in to your account
           </p>
         </div>
 
@@ -71,7 +71,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="vous@exemple.com"
+              placeholder="you@example.com"
               className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
             />
           </div>
@@ -81,7 +81,7 @@ export default function LoginPage() {
               htmlFor="password"
               className="block text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest mb-1.5"
             >
-              Mot de passe
+              Password
             </label>
             <input
               id="password"
@@ -102,14 +102,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-[#10b981] hover:bg-[#34d399] disabled:opacity-40 disabled:cursor-not-allowed text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_24px_rgba(16,185,129,0.35)]"
           >
-            {loading ? 'Connexion…' : 'Se connecter'}
+            {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 
         <p className="text-center text-xs text-[#475569] mt-5">
-          Pas de compte ?{' '}
+          No account?{' '}
           <Link href="/signup" className="text-[#10b981] hover:text-[#34d399] transition-colors">
-            Créer un compte
+            Create one
           </Link>
         </p>
       </div>

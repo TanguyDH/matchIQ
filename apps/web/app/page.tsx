@@ -28,50 +28,50 @@ function useCountUp(target: number, duration: number, trigger: boolean) {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const LIVE_METRICS = [
-  { key: 'goals', label: 'Buts totaux', current: 3, threshold: 2.5, max: 6, unit: '', met: true },
+  { key: 'goals', label: 'Total goals', current: 3, threshold: 2.5, max: 6, unit: '', met: true },
   { key: 'corners', label: 'Corners', current: 9, threshold: 8, max: 15, unit: '', met: true },
-  { key: 'shots', label: 'Tirs cadrés', current: 7, threshold: 5, max: 12, unit: '', met: true },
+  { key: 'shots', label: 'Shots on target', current: 7, threshold: 5, max: 12, unit: '', met: true },
   {
     key: 'poss',
-    label: 'Possession PSG',
+    label: 'PSG Possession',
     current: 58,
     threshold: 55,
     max: 100,
     unit: '%',
     met: true,
   },
-  { key: 'xg', label: 'xG total', current: 2.3, threshold: 2.5, max: 5, unit: '', met: false },
+  { key: 'xg', label: 'Total xG', current: 2.3, threshold: 2.5, max: 5, unit: '', met: false },
 ];
 
 const BENEFITS = [
   {
     kpi: '840+',
-    title: 'Signaux Live',
-    desc: 'Momentum, corners, tirs, possession, cotes en direct — capturés seconde par seconde sur chaque match en cours. Vous voyez ce que le score ne montre pas encore.',
+    title: 'Live Signals',
+    desc: 'Momentum, corners, shots, possession, live odds — captured second by second on every live match. You see what the scoreline does not show yet.',
     bars: [
       { label: 'IN_PLAY', pct: 78 },
-      { label: 'PRÉ_MATCH', pct: 58 },
-      { label: 'COTES LIVE', pct: 44 },
+      { label: 'PRE_MATCH', pct: 58 },
+      { label: 'LIVE ODDS', pct: 44 },
     ],
   },
   {
     kpi: '500+',
-    title: 'Matchs en Direct',
-    desc: "MatchIQ scanne simultanément toute l'action mondiale 24h/24. Ce qui se passe sur le terrain, vous le savez en temps réel — pas après la mi-temps.",
+    title: 'Live Matches',
+    desc: 'MatchIQ simultaneously scans all global action 24/7. What happens on the pitch, you know in real time — not after half time.',
     bars: [
       { label: 'EUROPE', pct: 88 },
-      { label: 'AMÉRIQUES', pct: 65 },
-      { label: 'ASIE', pct: 48 },
+      { label: 'AMERICAS', pct: 65 },
+      { label: 'ASIA', pct: 48 },
     ],
   },
   {
     kpi: '<30s',
-    title: 'Alerte Instantanée',
-    desc: "Dès que vos conditions se réunissent en live, une alerte Telegram vous arrive avec score, métriques et timing exact. Avant que les cotes n'aient le temps de bouger.",
+    title: 'Instant Alert',
+    desc: 'The moment your conditions are met live, a Telegram alert reaches you with score, metrics and exact timing. Before odds have time to move.',
     bars: [
-      { label: 'DÉTECTION', pct: 100 },
-      { label: 'ANALYSE', pct: 97 },
-      { label: 'ENVOI', pct: 100 },
+      { label: 'DETECTION', pct: 100 },
+      { label: 'ANALYSIS', pct: 97 },
+      { label: 'DELIVERY', pct: 100 },
     ],
   },
 ];
@@ -79,46 +79,46 @@ const BENEFITS = [
 const STEPS = [
   {
     n: '01',
-    title: 'Programmez votre stratégie',
-    desc: "Définissez exactement ce que vous cherchez sur un match en direct — métriques live, cotes, timing. L'éditeur visuel combine vos conditions en quelques clics.",
-    chip: '"Corners ≥ 8 ET Possession ≥ 60% après 65\'"',
+    title: 'Set your strategy',
+    desc: 'Define exactly what you are looking for in a live match — live metrics, odds, timing. The visual editor combines your conditions in a few clicks.',
+    chip: '"Corners ≥ 8 AND Possession ≥ 60% after 65\'"',
   },
   {
     n: '02',
-    title: 'Le live tourne pour vous',
-    desc: "MatchIQ scanne 500+ matchs en temps réel, non-stop. Dès que l'action sur le terrain correspond à votre stratégie, le moteur réagit.",
-    chip: '512 ligues • scan toutes les 15 secondes',
+    title: 'Live runs for you',
+    desc: 'MatchIQ scans 500+ matches in real time, non-stop. The moment the action on the pitch matches your strategy, the engine reacts.',
+    chip: '512 leagues • scan every 15 seconds',
   },
   {
     n: '03',
-    title: 'Recevez. Agissez. Maintenant.',
-    desc: "Alerte Telegram instantanée avec score, métriques en direct et contexte complet. Vous êtes notifié dans l'action — pas après le coup.",
-    chip: 'Délai < 30s • Score + métriques live inclus',
+    title: 'Receive. Act. Now.',
+    desc: 'Instant Telegram alert with score, live metrics and full context. You are notified in the action — not after the fact.',
+    chip: 'Delay < 30s • Score + live metrics included',
   },
 ];
 
 const TESTIMONIALS = [
   {
     quote:
-      "Avant je regardais les matchs en espérant repérer le bon moment. Maintenant l'alerte arrive sur mon téléphone pendant que je fais autre chose.",
+      "I used to watch matches hoping to spot the right moment. Now the alert arrives on my phone while I'm doing something else.",
     author: 'Thomas K.',
-    role: 'Parieur professionnel • Paris',
+    role: 'Professional bettor • Paris',
     stat: '+41%',
-    statLabel: 'ROI live',
+    statLabel: 'Live ROI',
   },
   {
     quote:
-      "Les alertes live arrivent avant que les cotes n'aient eu le temps de bouger. C'est exactement ça, l'avantage du direct.",
+      "Live alerts arrive before odds have had time to move. That's exactly it — the edge of real time.",
     author: 'Alexandre M.',
-    role: 'Trader sportif • Lyon',
+    role: 'Sports trader • Lyon',
     stat: '−3h',
-    statLabel: '/semaine',
+    statLabel: '/week',
   },
   {
     quote:
-      "J'analyse 10x plus de matchs en live qu'avant, sans regarder chaque rencontre. MatchIQ fait le travail de surveillance à ma place.",
+      "I analyse 10x more live matches than before, without watching each one. MatchIQ does the monitoring for me.",
     author: 'Sarah L.',
-    role: 'Analyste indépendante • Bordeaux',
+    role: 'Independent analyst • Bordeaux',
     stat: '+34%',
     statLabel: 'ROI',
   },
@@ -145,7 +145,7 @@ export default function LandingPage() {
     return () => clearTimeout(t);
   }, []);
 
-  // Show "DÉCLENCHÉ" badge after 2s
+  // Show "TRIGGERED" badge after 2s
   useEffect(() => {
     const t = setTimeout(() => setTriggered(true), 2200);
     return () => clearTimeout(t);
@@ -157,7 +157,7 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Stats trigger — démarre dès que la page est rendue (loading terminé, pas de session)
+  // Stats trigger — starts as soon as the page renders (loading done, no session)
   useEffect(() => {
     if (loading || session) return;
     const el = statsRef.current;
@@ -173,7 +173,7 @@ export default function LandingPage() {
       { threshold: 0.1 },
     );
     observer.observe(el);
-    // Fallback : si la section est déjà visible ou l'observer ne tire pas
+    // Fallback: if the section is already visible or the observer does not fire
     const fallback = setTimeout(trigger, 1200);
     return () => {
       observer.disconnect();
@@ -217,13 +217,13 @@ export default function LandingPage() {
               href="/login"
               className="text-sm text-[#64748b] hover:text-[#f1f5f9] transition-colors px-3 py-2"
             >
-              Se connecter
+              Sign in
             </Link>
             <Link
               href="/signup"
               className="px-4 py-2 bg-[#10b981] text-[#0f172a] text-sm font-semibold rounded-lg hover:bg-[#34d399] transition-all hover:shadow-[0_0_24px_rgba(16,185,129,0.35)]"
             >
-              Commencer →
+              Get started →
             </Link>
           </div>
         </div>
@@ -265,23 +265,23 @@ export default function LandingPage() {
           <div className="animate-fade-up">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1e293b] bg-[#1e293b] text-xs text-[#94a3b8] font-mono tracking-wider mb-10">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse-slow inline-block" />
-              FOOTBALL LIVE • ALERTES TELEGRAM EN TEMPS RÉEL
+              FOOTBALL LIVE • REAL-TIME TELEGRAM ALERTS
             </div>
 
             <h1
               className="font-display leading-[0.88] tracking-wide text-white mb-8"
               style={{ fontSize: 'clamp(4rem, 9vw, 8rem)' }}
             >
-              SAISISSEZ
+              CAPTURE
               <br />
-              <span className="text-[#10b981]">L&apos;INSTANT</span>
+              <span className="text-[#10b981]">THE MOMENT</span>
               <br />
               LIVE
             </h1>
 
             <p className="text-base text-[#94a3b8] max-w-sm mb-10 leading-relaxed">
-              MatchIQ scanne chaque match en direct et déclenche vos alertes Telegram au moment
-              précis où l&apos;action se passe — pas après le coup.
+              MatchIQ scans every live match and fires your Telegram alerts at the exact moment the
+              action happens — not after the fact.
             </p>
 
             <div className="flex items-center gap-4 flex-wrap">
@@ -289,19 +289,19 @@ export default function LandingPage() {
                 href="/signup"
                 className="group inline-flex items-center gap-2 px-6 py-3.5 bg-[#10b981] text-[#0f172a] font-semibold rounded-lg text-sm hover:bg-[#34d399] transition-all hover:shadow-[0_0_40px_rgba(16,185,129,0.4)] hover:scale-[1.03]"
               >
-                Commencer gratuitement
+                Start for free
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
               </Link>
               <a
                 href="#how"
                 className="inline-flex items-center gap-2 px-6 py-3.5 border border-[#1e293b] text-[#94a3b8] rounded-lg text-sm hover:border-[#334155] hover:text-[#f1f5f9] transition-all"
               >
-                Comment ça marche
+                How it works
               </a>
             </div>
 
             <div className="mt-10 flex items-center gap-6 flex-wrap">
-              {['Sans carte bancaire', '500+ matchs live', 'Alertes < 30s'].map((t) => (
+              {['No credit card', '500+ live matches', 'Alerts < 30s'].map((t) => (
                 <div key={t} className="flex items-center gap-1.5 text-xs text-[#475569]">
                   <span className="text-[#10b981]">✓</span> {t}
                 </div>
@@ -330,7 +330,7 @@ export default function LandingPage() {
                       UEFA CHAMPIONS LEAGUE
                     </div>
                     <div className="text-xs font-semibold text-[#94a3b8] font-mono">
-                      Analyse en Direct
+                      Live Analysis
                     </div>
                   </div>
                   <div
@@ -345,7 +345,7 @@ export default function LandingPage() {
                         triggered ? 'bg-[#10b981] animate-pulse' : 'bg-[#60a5fa] animate-pulse-slow'
                       }`}
                     />
-                    {triggered ? 'DÉCLENCHÉ' : `${minute}'`}
+                    {triggered ? 'TRIGGERED' : `${minute}'`}
                   </div>
                 </div>
 
@@ -377,7 +377,7 @@ export default function LandingPage() {
                 {/* Metrics bars */}
                 <div className="p-5 space-y-3.5">
                   <div className="text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-4">
-                    Métriques · Stratégie &ldquo;Pressure 70+&rdquo;
+                    Metrics · Strategy &ldquo;Pressure 70+&rdquo;
                   </div>
                   {LIVE_METRICS.map((m, i) => {
                     const fillPct = Math.min((m.current / m.max) * 100, 100);
@@ -431,11 +431,11 @@ export default function LandingPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-[#10b981] text-sm">⚡</span>
                       <span className="text-xs font-mono font-semibold text-[#10b981]">
-                        STRATÉGIE DÉCLENCHÉE
+                        STRATEGY TRIGGERED
                       </span>
                     </div>
                     <div className="text-[10px] text-[#64748b] font-mono mt-1">
-                      Alerte Telegram envoyée → @ThomasK ✓
+                      Telegram alert sent → @ThomasK ✓
                     </div>
                   </div>
                 )}
@@ -449,10 +449,10 @@ export default function LandingPage() {
       <div ref={statsRef} className="border-y border-[#1e293b] bg-[#1e293b]/30">
         <div className="mx-auto max-w-7xl px-6 py-10 grid grid-cols-2 lg:grid-cols-4 divide-x divide-[#1e293b]">
           {[
-            { n: matchesCount.toLocaleString('fr-FR'), label: 'Matchs surveillés', trend: '+12%' },
-            { n: alertsCount.toLocaleString('fr-FR'), label: 'Alertes envoyées', trend: '+8%' },
-            { n: metricsCount + '+', label: 'Métriques disponibles', trend: 'NEW' },
-            { n: leaguesCount + '+', label: 'Ligues couvertes', trend: '+5' },
+            { n: matchesCount.toLocaleString('en-US'), label: 'Matches monitored', trend: '+12%' },
+            { n: alertsCount.toLocaleString('en-US'), label: 'Alerts sent', trend: '+8%' },
+            { n: metricsCount + '+', label: 'Available metrics', trend: 'NEW' },
+            { n: leaguesCount + '+', label: 'Leagues covered', trend: '+5' },
           ].map(({ n, label, trend }) => (
             <div key={label} className="text-center px-6 py-2">
               <div className="font-display text-5xl text-white tracking-wider leading-none mb-1">
@@ -474,15 +474,15 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-16">
             <span className="font-mono text-xs text-[#475569] uppercase tracking-widest">
-              Pourquoi MatchIQ
+              Why MatchIQ
             </span>
             <h2
               className="font-display text-white mt-3 tracking-wide leading-none"
               style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
             >
-              TOUT SE PASSE
+              IT ALL HAPPENS
               <br />
-              <span className="text-[#10b981]">EN DIRECT</span>
+              <span className="text-[#10b981]">LIVE</span>
             </h2>
           </div>
 
@@ -536,9 +536,9 @@ export default function LandingPage() {
               className="font-display text-white mt-3 tracking-wide leading-none"
               style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
             >
-              AGISSEZ
+              ACT
               <br />
-              <span className="text-[#10b981]">EN TEMPS RÉEL</span>
+              <span className="text-[#10b981]">IN REAL TIME</span>
             </h2>
           </div>
 
@@ -581,15 +581,15 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-16">
             <span className="font-mono text-xs text-[#475569] uppercase tracking-widest">
-              Témoignages
+              Testimonials
             </span>
             <h2
               className="font-display text-white mt-3 tracking-wide leading-none"
               style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
             >
-              ILS NOUS
+              THEY
               <br />
-              <span className="text-[#10b981]">FONT CONFIANCE</span>
+              <span className="text-[#10b981]">TRUST US</span>
             </h2>
           </div>
 
@@ -642,23 +642,23 @@ export default function LandingPage() {
         <div className="mx-auto max-w-4xl text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1e293b] bg-[#1e293b] text-xs text-[#94a3b8] font-mono tracking-wider mb-10">
             <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse-slow inline-block" />
-            LIVE MAINTENANT • SANS CARTE BANCAIRE
+            LIVE NOW • NO CREDIT CARD
           </div>
 
           <h2
             className="font-display text-white leading-[0.88] tracking-wide mb-8"
             style={{ fontSize: 'clamp(4rem, 12vw, 8.5rem)' }}
           >
-            NE RATEZ
+            NEVER
             <br />
-            <span className="text-[#10b981]">PLUS</span>
+            <span className="text-[#10b981]">MISS</span>
             <br />
-            L&apos;ACTION
+            THE ACTION
           </h2>
 
           <p className="text-base text-[#94a3b8] max-w-md mx-auto mb-12">
-            Des centaines d&apos;opportunités se jouent en direct chaque jour. MatchIQ vous dit
-            laquelle saisir — au moment exact où elle se présente.
+            Hundreds of opportunities play out live every day. MatchIQ tells you which one to take
+            — at the exact moment it appears.
           </p>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
@@ -666,19 +666,19 @@ export default function LandingPage() {
               href="/signup"
               className="group inline-flex items-center gap-2 px-8 py-4 bg-[#10b981] text-[#0f172a] font-semibold rounded-xl text-base hover:bg-[#34d399] transition-all hover:shadow-[0_0_60px_rgba(16,185,129,0.45)] hover:scale-105"
             >
-              Créer un compte gratuitement
+              Create a free account
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </Link>
             <Link
               href="/login"
               className="inline-flex items-center px-8 py-4 border border-[#334155] text-[#94a3b8] rounded-xl text-base hover:border-[#10b981]/30 hover:text-[#f1f5f9] transition-all"
             >
-              Se connecter
+              Sign in
             </Link>
           </div>
 
           <p className="mt-8 text-xs text-[#334155]">
-            Aucune carte bancaire requise • Accès instantané
+            No credit card required • Instant access
           </p>
         </div>
       </section>
@@ -689,13 +689,13 @@ export default function LandingPage() {
           <span className="font-display text-xl text-[#10b981] tracking-wider">MATCHIQ</span>
           <div className="flex items-center gap-6 text-xs text-[#475569]">
             <Link href="/login" className="hover:text-[#f1f5f9] transition-colors">
-              Connexion
+              Sign in
             </Link>
             <Link href="/signup" className="hover:text-[#f1f5f9] transition-colors">
-              Inscription
+              Sign up
             </Link>
           </div>
-          <p className="text-xs text-[#334155]">© 2026 MatchIQ. Tous droits réservés.</p>
+          <p className="text-xs text-[#334155]">© 2026 MatchIQ. All rights reserved.</p>
         </div>
       </footer>
     </div>

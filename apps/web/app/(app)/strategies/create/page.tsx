@@ -54,21 +54,21 @@ export default function CreateStrategyPage() {
         >
           ←
         </button>
-        <h1 className="font-display text-3xl text-[#f1f5f9] tracking-wide">NOUVELLE STRATÉGIE</h1>
+        <h1 className="font-display text-3xl text-[#f1f5f9] tracking-wide">NEW STRATEGY</h1>
       </div>
 
       <div className="space-y-5">
         {/* Name */}
         <div>
           <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-            Nom de la stratégie *
+            Strategy name *
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            placeholder="ex. Pression haute en 2e mi-temps"
+            placeholder="e.g. High press in 2nd half"
             autoFocus
             className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
           />
@@ -77,14 +77,14 @@ export default function CreateStrategyPage() {
         {/* Desired Outcome */}
         <div>
           <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-            Objectif de pari
+            Betting goal
           </label>
           <select
             value={desiredOutcome}
             onChange={(e) => setDesiredOutcome(e.target.value)}
             className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] appearance-none focus:outline-none focus:border-[#10b981] transition-colors"
           >
-            <option value="">Aucun</option>
+            <option value="">None</option>
             {Object.entries(
               DESIRED_OUTCOMES.reduce<Record<string, typeof DESIRED_OUTCOMES>>((acc, o) => {
                 (acc[o.group] ??= []).push(o);
@@ -105,7 +105,7 @@ export default function CreateStrategyPage() {
         {/* Alert Type */}
         <div>
           <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-            Type d&apos;alerte
+            Alert type
           </label>
           <div className="flex gap-2">
             <button
@@ -127,13 +127,13 @@ export default function CreateStrategyPage() {
             disabled={!name.trim() || saving}
             className="flex-1 bg-[#10b981] hover:bg-[#34d399] disabled:bg-[#334155] disabled:text-[#475569] text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.35)]"
           >
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
+            {saving ? 'Saving…' : 'Save'}
           </button>
           <button
             onClick={() => router.back()}
             className="px-4 py-2.5 rounded-lg text-xs text-[#94a3b8] hover:text-[#f1f5f9] border border-[#334155] transition-colors"
           >
-            Annuler
+            Cancel
           </button>
         </div>
       </div>

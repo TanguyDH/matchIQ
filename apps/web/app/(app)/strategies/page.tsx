@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Strategy, Rule, COMPARATOR_LABELS, TEAM_SCOPES, metricLabel } from '@matchiq/shared-types';
+import { Strategy, Rule, TimeFilter, COMPARATOR_LABELS, TEAM_SCOPES, metricLabel } from '@matchiq/shared-types';
 import { api } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
 import Toggle from '@/components/Toggle';
@@ -37,7 +37,7 @@ function ActionsMenu({ onDelete, onRename }: { onDelete: () => void; onRename: (
               }}
               className="w-full text-left px-3 py-1.5 text-xs text-[#94a3b8] hover:bg-[#334155] transition-colors"
             >
-              Renommer
+              Rename
             </button>
             <button
               onClick={(e) => {
@@ -47,7 +47,7 @@ function ActionsMenu({ onDelete, onRename }: { onDelete: () => void; onRename: (
               }}
               className="w-full text-left px-3 py-1.5 text-xs text-[#f87171] hover:bg-[#334155] transition-colors"
             >
-              Supprimer
+              Delete
             </button>
           </div>
         </>
@@ -58,17 +58,34 @@ function ActionsMenu({ onDelete, onRename }: { onDelete: () => void; onRename: (
 
 // ─── Format rule display ──────────────────────────────────────────────────────
 
+function formatTimeFilter(tf: TimeFilter): string {
+  switch (tf.mode) {
+    case 'as_of_minute': return `@ min ${tf.x}`;
+    case 'x_minutes_ago': return `${tf.x} min ago`;
+    case 'between': return `min ${tf.x}–${tf.y}`;
+    case 'past_x': return `last ${tf.x} min`;
+    case 'since_minute': return `since min ${tf.x}`;
+    case 'during_2nd_half': return `2nd half`;
+    case 'as_of_halftime': return `@ HT`;
+    default: return '';
+  }
+}
+
 function formatRule(rule: Rule): string {
   const metric = metricLabel(rule.metric);
   const comparator = COMPARATOR_LABELS[rule.comparator];
   const teamScope = rule.team_scope
     ? TEAM_SCOPES.find((t) => t.value === rule.team_scope)?.label
     : null;
+  const timeLabel =
+    rule.time_filter && rule.time_filter.mode !== 'off'
+      ? ` ⏱ ${formatTimeFilter(rule.time_filter)}`
+      : '';
 
   if (teamScope) {
-    return `${metric} (${teamScope}) ${comparator} ${rule.value}`;
+    return `${metric} (${teamScope}) ${comparator} ${rule.value}${timeLabel}`;
   }
-  return `${metric} ${comparator} ${rule.value}`;
+  return `${metric} ${comparator} ${rule.value}${timeLabel}`;
 }
 
 // ─── Mobile strategy card ─────────────────────────────────────────────────────
@@ -224,12 +241,12 @@ function StrategyCard({
       {expanded && (
         <div className="border-t border-[#334155] bg-[#0f172a] px-4 py-4 rounded-b-xl">
           <p className="text-[10px] text-[#475569] font-mono mb-3 uppercase tracking-wider">
-            M&apos;alerter si :
+            Alert me if:
           </p>
 
-          {loadingRules && <p className="text-xs text-[#475569] font-mono">Chargement…</p>}
+          {loadingRules && <p className="text-xs text-[#475569] font-mono">Loading…</p>}
           {!loadingRules && rules.length === 0 && (
-            <p className="text-xs text-[#475569] mb-3">Aucune règle configurée</p>
+            <p className="text-xs text-[#475569] mb-3">No rules configured</p>
           )}
 
           {!loadingRules &&
@@ -258,7 +275,7 @@ function StrategyCard({
                 </div>
                 {idx < rules.length - 1 && (
                   <p className="text-[10px] text-[#475569] font-mono py-0.5 uppercase tracking-widest">
-                    et
+                    and
                   </p>
                 )}
               </div>
@@ -269,7 +286,7 @@ function StrategyCard({
               onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
               className="bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
             >
-              + Règle
+              + Rule
             </button>
             <button
               onClick={() => setShowLeagueSelector(true)}
@@ -277,8 +294,8 @@ function StrategyCard({
             >
               🏆{' '}
               {!strategy.league_ids || strategy.league_ids.length === 0
-                ? 'Toutes ligues'
-                : `${strategy.league_ids.length} ligue${strategy.league_ids.length > 1 ? 's' : ''}`}
+                ? 'All leagues'
+                : `${strategy.league_ids.length} league${strategy.league_ids.length > 1 ? 's' : ''}`}
             </button>
           </div>
 
@@ -455,13 +472,13 @@ function StrategyRow({
           <td colSpan={5} className="bg-[#0f172a] px-4 py-4 border-b border-[#334155]">
             <div className="ml-8">
               <p className="text-xs text-[#475569] font-mono mb-3 uppercase tracking-wider">
-                M&apos;alerter si :
+                Alert me if:
               </p>
 
-              {loadingRules && <p className="text-xs text-[#475569] font-mono">Chargement…</p>}
+              {loadingRules && <p className="text-xs text-[#475569] font-mono">Loading…</p>}
 
               {!loadingRules && rules.length === 0 && (
-                <p className="text-xs text-[#475569] mb-3">Aucune règle</p>
+                <p className="text-xs text-[#475569] mb-3">No rules</p>
               )}
 
               {!loadingRules &&
@@ -473,7 +490,7 @@ function StrategyRow({
                         <button
                           onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
                           className="text-[#475569] hover:text-[#10b981] transition-colors"
-                          title="Modifier"
+                          title="Edit"
                         >
                           <svg
                             className="w-4 h-4"
@@ -492,7 +509,7 @@ function StrategyRow({
                         <button
                           onClick={() => handleDeleteRule(rule.id)}
                           className="text-[#475569] hover:text-[#f87171] transition-colors"
-                          title="Supprimer"
+                          title="Delete"
                         >
                           <svg
                             className="w-4 h-4"
@@ -512,7 +529,7 @@ function StrategyRow({
                     </div>
                     {idx < rules.length - 1 && (
                       <p className="text-[10px] text-[#475569] font-mono py-1 uppercase tracking-widest">
-                        et
+                        and
                       </p>
                     )}
                   </div>
@@ -523,7 +540,7 @@ function StrategyRow({
                   onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
                   className="bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                 >
-                  + Ajouter une règle
+                  + Add rule
                 </button>
                 <button
                   onClick={() => setShowLeagueSelector(true)}
@@ -531,8 +548,8 @@ function StrategyRow({
                 >
                   🏆{' '}
                   {!strategy.league_ids || strategy.league_ids.length === 0
-                    ? 'Ligues : Toutes'
-                    : `Ligues : ${strategy.league_ids.length}`}
+                    ? 'Leagues: All'
+                    : `Leagues: ${strategy.league_ids.length}`}
                 </button>
                 {showLeagueSelector && (
                   <LeagueSelector
@@ -600,7 +617,7 @@ export default function StrategiesPage() {
   };
 
   const handleDelete = async (strategy: Strategy) => {
-    if (!confirm(`Supprimer "${strategy.name}" ?`)) return;
+    if (!confirm(`Delete "${strategy.name}"?`)) return;
     try {
       await api.deleteStrategy(token, strategy.id);
       setStrategies((prev) => prev.filter((s) => s.id !== strategy.id));
@@ -642,12 +659,11 @@ export default function StrategiesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-4xl text-[#f1f5f9] tracking-wide leading-none">
-            STRATÉGIES
+            STRATEGIES
           </h1>
           {!loading && strategies.length > 0 && (
             <p className="text-xs text-[#475569] font-mono mt-1">
-              {strategies.length} stratégie{strategies.length > 1 ? 's' : ''} configurée
-              {strategies.length > 1 ? 's' : ''}
+              {strategies.length} strateg{strategies.length > 1 ? 'ies' : 'y'} configured
             </p>
           )}
         </div>
@@ -655,7 +671,7 @@ export default function StrategiesPage() {
           onClick={() => router.push('/strategies/create')}
           className="bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] text-xs font-semibold px-4 py-2 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.35)]"
         >
-          + Nouvelle
+          + New
         </button>
       </div>
 
@@ -663,15 +679,15 @@ export default function StrategiesPage() {
       {!loading && (
         <div className="flex items-center gap-2 mb-6">
           <span className="text-[10px] text-[#334155] font-mono uppercase tracking-widest">
-            Ligues par défaut
+            Default leagues
           </span>
           <button
             onClick={() => setShowGlobalSelector(true)}
             className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors"
           >
             {defaultLeagueIds.length === 0
-              ? 'Toutes'
-              : `${defaultLeagueIds.length} sélectionnée${defaultLeagueIds.length > 1 ? 's' : ''}`}
+              ? 'All'
+              : `${defaultLeagueIds.length} selected`}
             {' ↗'}
           </button>
         </div>
@@ -692,7 +708,7 @@ export default function StrategiesPage() {
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center h-48">
-          <span className="text-[#475569] text-sm font-mono">Chargement…</span>
+          <span className="text-[#475569] text-sm font-mono">Loading…</span>
         </div>
       )}
 
@@ -702,12 +718,12 @@ export default function StrategiesPage() {
       {/* Empty state */}
       {!loading && !error && strategies.length === 0 && (
         <div className="flex flex-col items-center justify-center h-48 border border-dashed border-[#334155] rounded-xl">
-          <p className="text-sm text-[#475569]">Aucune stratégie</p>
+          <p className="text-sm text-[#475569]">No strategies yet</p>
           <button
             onClick={() => router.push('/strategies/create')}
             className="mt-3 text-[#10b981] text-xs hover:text-[#34d399] transition-colors"
           >
-            Créer votre première →
+            Create your first one →
           </button>
         </div>
       )}
@@ -719,7 +735,7 @@ export default function StrategiesPage() {
             <thead>
               <tr className="border-b border-[#334155]">
                 <th className="pb-3 text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest">
-                  Nom / Objectif
+                  Name / Goal
                 </th>
                 <th className="pb-3 text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest">
                   Picks
@@ -728,7 +744,7 @@ export default function StrategiesPage() {
                   Hit %
                 </th>
                 <th className="pb-3 text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest">
-                  Statut
+                  Status
                 </th>
                 <th className="pb-3" />
               </tr>
