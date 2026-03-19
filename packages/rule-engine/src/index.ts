@@ -12,6 +12,7 @@ import type {
   StrategyWithRules,
   TeamScope,
 } from '@matchiq/shared-types';
+import { metricLabel } from '@matchiq/shared-types';
 import { extractInPlayMetric, extractPreMatchMetric } from './metrics-logic';
 
 // Export for testing and external use
@@ -57,7 +58,7 @@ export function evaluateStrategy(
     if (passed) {
       matchedRules.push({
         ruleId: rule.id,
-        metric: rule.metric,
+        metric: rule.lhs_json ? formatExpressionLabel(rule.lhs_json) : rule.metric,
         comparator: rule.comparator,
         target,
         actual,
@@ -350,6 +351,23 @@ function evaluateExpression(
  * @param target - The target value from the rule
  * @returns True if the comparison passes
  */
+
+/**
+ * Formats a RuleExpression into a human-readable label for Telegram alerts.
+ */
+function formatRuleValueLabel(rv: RuleValue): string {
+  if (rv.kind === 'number') return String(rv.number ?? '?');
+  if (!rv.metric) return '?';
+  return metricLabel(rv.metric) || rv.metric;
+}
+
+function formatExpressionLabel(expr: RuleExpression): string {
+  const left = formatRuleValueLabel(expr.left);
+  if (!expr.op || !expr.right) return left;
+  const opLabel = expr.op === '*' ? '×' : expr.op === '/' ? '÷' : expr.op;
+  return `${left} ${opLabel} ${formatRuleValueLabel(expr.right)}`;
+}
+
 function evaluateComparator(
   comparator: Comparator,
   actual: number,
