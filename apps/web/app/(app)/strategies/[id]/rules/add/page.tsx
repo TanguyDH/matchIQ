@@ -199,6 +199,21 @@ export default function AddRulePage() {
     }
   };
 
+  const [activating, setActivating] = useState(false);
+
+  const handleDone = async () => {
+    setActivating(true);
+    try {
+      if (strategy && !strategy.is_active) {
+        await api.patchStrategy(token, strategyId, { is_active: true });
+      }
+      router.push('/strategies');
+    } catch (e) {
+      setSaveError((e as Error).message);
+      setActivating(false);
+    }
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div>
@@ -282,11 +297,24 @@ export default function AddRulePage() {
           <p className="text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-3">
             Current rules <span className="text-[#334155]">({rules.length})</span>
           </p>
-          <div className="space-y-2">
+          <div className="space-y-2 mb-5">
             {rules.map((rule) => (
               <RuleChip key={rule.id} rule={rule} onDelete={() => handleDeleteRule(rule.id)} />
             ))}
           </div>
+
+          <button
+            type="button"
+            onClick={handleDone}
+            disabled={activating}
+            className="w-full bg-[#10b981] hover:bg-[#34d399] disabled:bg-[#334155] disabled:text-[#475569] text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.35)]"
+          >
+            {activating
+              ? 'Activating…'
+              : strategy && !strategy.is_active
+                ? 'Done — Activate strategy'
+                : 'Done'}
+          </button>
         </div>
       )}
     </div>

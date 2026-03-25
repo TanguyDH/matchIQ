@@ -1,6 +1,7 @@
 import {
   Strategy,
   Rule,
+  Trigger,
   CreateStrategyPayload,
   PatchStrategyPayload,
   CreateRulePayload,
@@ -38,6 +39,12 @@ export const api = {
 
   getRules: (token: string | null, strategyId: string) =>
     request<Rule[]>(`/strategies/${strategyId}/rules`, token),
+
+  getTriggers: (token: string | null, strategyId: string, page = 1, pageSize = 20) =>
+    request<{ data: Trigger[]; total: number; page: number; pageSize: number }>(
+      `/strategies/${strategyId}/triggers?page=${page}&pageSize=${pageSize}`,
+      token,
+    ),
 
   createRule: (token: string | null, strategyId: string, body: CreateRulePayload) =>
     request<Rule>(`/strategies/${strategyId}/rules`, token, {

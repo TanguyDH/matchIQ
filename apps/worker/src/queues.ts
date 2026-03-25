@@ -71,8 +71,14 @@ export const sendAlertWorker = new Worker<{
       `[SendAlertWorker] Sending alert for strategy "${strategyName}" (attempt ${job.attemptsMade + 1})`,
     );
     const sent = await sendAlert(strategyName, match, result, telegramChatId);
+    if (!sent) {
+      console.warn(`[SendAlertWorker] sendAlert returned null for strategy="${strategyName}" — telegram_message_id will not be saved`);
+    }
     if (sent && triggerId) {
-      await supabase
+      console.log(
+        `[SendAlertWorker] Saving telegram message id=${sent.messageId} for trigger=${triggerId}`,
+      );
+      const { error: updateError } = await supabase
         .from('triggers')
         .update({
           telegram_message_id: sent.messageId,
@@ -80,6 +86,15 @@ export const sendAlertWorker = new Worker<{
           telegram_message_text: sent.messageText,
         })
         .eq('id', triggerId);
+      if (updateError) {
+        // Log but don't throw — message was already sent, retrying would cause duplicate alerts
+        console.error(
+          `[SendAlertWorker] Failed to save telegram_message_id for trigger=${triggerId}:`,
+          updateError,
+        );
+      } else {
+        console.log(`[SendAlertWorker] telegram_message_id saved for trigger=${triggerId}`);
+      }
     }
   },
   {

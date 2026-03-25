@@ -7,6 +7,7 @@ export const CreateStrategySchema = z.object({
   alert_type: z.enum(['IN_PLAY', 'PRE_MATCH']),
   desired_outcome: z.string().optional(),
   league_ids: z.array(z.number().int().positive()).nullable().optional(),
+  is_active: z.boolean().optional(),
 });
 
 export type CreateStrategyDto = z.infer<typeof CreateStrategySchema>;

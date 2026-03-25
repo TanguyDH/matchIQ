@@ -76,6 +76,28 @@ export class StrategiesService {
     );
   }
 
+  async findTriggers(userId: string, id: string, page: number, pageSize: number) {
+    // Ownership gate
+    await this.findOne(userId, id);
+
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await this.supabase.client
+      .from('triggers')
+      .select('*', { count: 'exact' })
+      .eq('strategy_id', id)
+      .order('triggered_at', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      this.logger.error(error.message);
+      throw new InternalServerErrorException();
+    }
+
+    return { data: data ?? [], total: count ?? 0, page, pageSize };
+  }
+
   async delete(userId: string, id: string) {
     // Ownership gate — throws 404 if the strategy doesn't belong to this user.
     await this.findOne(userId, id);

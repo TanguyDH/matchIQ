@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { AlertType, DESIRED_OUTCOMES } from '@matchiq/shared-types';
+import { useParams, useRouter } from 'next/navigation';
+import { DESIRED_OUTCOMES } from '@matchiq/shared-types';
 import { api } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
-
-// ─── Betting goal dropdown with search ───────────────────────────────────────
 
 function OutcomeDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -47,10 +45,7 @@ function OutcomeDropdown({ value, onChange }: { value: string; onChange: (v: str
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        onClick={() => {
-          setOpen((s) => !s);
-          setSearch('');
-        }}
+        onClick={() => { setOpen((s) => !s); setSearch(''); }}
         className="w-full flex items-center justify-between bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#10b981] transition-colors"
       >
         <span className={selectedLabel ? 'text-[#f1f5f9]' : 'text-[#475569]'}>
@@ -72,15 +67,9 @@ function OutcomeDropdown({ value, onChange }: { value: string; onChange: (v: str
           <div className="overflow-y-auto flex-1">
             <button
               type="button"
-              onClick={() => {
-                onChange('');
-                setOpen(false);
-                setSearch('');
-              }}
+              onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
               className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                value === ''
-                  ? 'bg-[rgba(16,185,129,0.1)] text-[#10b981]'
-                  : 'text-[#94a3b8] hover:bg-[#334155]'
+                value === '' ? 'bg-[rgba(16,185,129,0.1)] text-[#10b981]' : 'text-[#94a3b8] hover:bg-[#334155]'
               }`}
             >
               None
@@ -95,11 +84,7 @@ function OutcomeDropdown({ value, onChange }: { value: string; onChange: (v: str
                   <button
                     key={item.value}
                     type="button"
-                    onClick={() => {
-                      onChange(item.value);
-                      setOpen(false);
-                      setSearch('');
-                    }}
+                    onClick={() => { onChange(item.value); setOpen(false); setSearch(''); }}
                     className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
                       item.value === value
                         ? 'bg-[rgba(16,185,129,0.1)] text-[#10b981]'
@@ -118,38 +103,39 @@ function OutcomeDropdown({ value, onChange }: { value: string; onChange: (v: str
   );
 }
 
-export default function CreateStrategyPage() {
+export default function EditStrategyPage() {
   const { token } = useAuth();
   const router = useRouter();
+  const { id: strategyId } = useParams<{ id: string }>();
 
   const [name, setName] = useState('');
   const [desiredOutcome, setDesiredOutcome] = useState('');
-  const [alertType] = useState<AlertType>('IN_PLAY');
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [defaultLeagueIds, setDefaultLeagueIds] = useState<number[] | null>(null);
 
   useEffect(() => {
-    api.getUserSettings(token).then((s) => {
-      setDefaultLeagueIds(s.default_league_ids);
+    if (!token || !strategyId) return;
+    api.getStrategy(token, strategyId).then((s) => {
+      setName(s.name);
+      setDesiredOutcome(s.desired_outcome ?? '');
+      setLoading(false);
+    }).catch((e: Error) => {
+      setError(e.message);
+      setLoading(false);
     });
-  }, [token]);
+  }, [token, strategyId]);
 
   const handleSave = async () => {
     if (!name.trim()) return;
     setSaving(true);
     setError(null);
     try {
-      const strategy = await api.createStrategy(token, {
+      await api.patchStrategy(token, strategyId, {
         name: name.trim(),
-        alert_type: alertType,
-        is_active: false,
-        ...(desiredOutcome ? { desired_outcome: desiredOutcome } : {}),
-        ...(defaultLeagueIds && defaultLeagueIds.length > 0
-          ? { league_ids: defaultLeagueIds }
-          : {}),
+        desired_outcome: desiredOutcome || null,
       });
-      router.push(`/strategies/${strategy.id}/rules/add`);
+      router.push('/strategies');
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -157,9 +143,16 @@ export default function CreateStrategyPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <span className="text-[#475569] text-sm font-mono">Loading…</span>
+      </div>
+    );
+  }
+
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <button
           onClick={() => router.back()}
@@ -167,11 +160,10 @@ export default function CreateStrategyPage() {
         >
           ←
         </button>
-        <h1 className="font-display text-3xl text-[#f1f5f9] tracking-wide">NEW STRATEGY</h1>
+        <h1 className="font-display text-3xl text-[#f1f5f9] tracking-wide">EDIT STRATEGY</h1>
       </div>
 
       <div className="space-y-5">
-        {/* Name */}
         <div>
           <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
             Strategy name *
@@ -181,13 +173,11 @@ export default function CreateStrategyPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            placeholder="e.g. High press in 2nd half"
             autoFocus
             className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
           />
         </div>
 
-        {/* Desired Outcome */}
         <div>
           <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
             Betting goal
@@ -195,32 +185,15 @@ export default function CreateStrategyPage() {
           <OutcomeDropdown value={desiredOutcome} onChange={setDesiredOutcome} />
         </div>
 
-        {/* Alert Type */}
-        <div>
-          <label className="block text-[10px] font-mono text-[#475569] uppercase tracking-widest mb-1.5">
-            Alert type
-          </label>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="flex-1 py-2 rounded-lg text-xs font-semibold bg-[#10b981] text-[#0f172a]"
-            >
-              In-Play
-            </button>
-          </div>
-        </div>
-
-        {/* Error */}
         {error && <p className="text-[#f87171] text-xs font-mono">{error}</p>}
 
-        {/* Actions */}
         <div className="flex gap-3 pt-2">
           <button
             onClick={handleSave}
             disabled={!name.trim() || saving}
             className="flex-1 bg-[#10b981] hover:bg-[#34d399] disabled:bg-[#334155] disabled:text-[#475569] text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.35)]"
           >
-            {saving ? 'Saving…' : 'Next →'}
+            {saving ? 'Saving…' : 'Save'}
           </button>
           <button
             onClick={() => router.back()}

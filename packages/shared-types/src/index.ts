@@ -181,6 +181,7 @@ export interface CreateStrategyPayload {
   alert_type: AlertType;
   desired_outcome?: string;
   league_ids?: number[] | null;
+  is_active?: boolean;
 }
 
 export interface PatchStrategyPayload {

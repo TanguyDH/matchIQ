@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 
 import { AuthGuard } from '../auth/auth.guard';
 import { UserId } from '../auth/user-id.decorator';
@@ -20,6 +20,16 @@ export class StrategiesController {
   @Get(':id')
   findOne(@UserId() userId: string, @Param('id') id: string) {
     return this.service.findOne(userId, id);
+  }
+
+  @Get(':id/triggers')
+  findTriggers(
+    @UserId() userId: string,
+    @Param('id') id: string,
+    @Query('page') page = '1',
+    @Query('pageSize') pageSize = '20',
+  ) {
+    return this.service.findTriggers(userId, id, Math.max(1, parseInt(page)), Math.min(100, parseInt(pageSize)));
   }
 
   @Post()

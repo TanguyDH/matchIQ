@@ -404,14 +404,12 @@ function applyTeamScope(
       // Cote plus basse = plus probable de gagner selon les bookmakers
       if (!bothAvailable) return null;
 
-      // Récupérer les cotes (pm_odds ou live_odds)
-      const homeOdds = match.odds?.home_win ?? match.odds?.pm_odds_1x2_home ?? match.odds?.live_odds_1x2_home;
-      const awayOdds = match.odds?.away_win ?? match.odds?.pm_odds_1x2_away ?? match.odds?.live_odds_1x2_away;
+      // Récupérer les cotes pré-match (ou live en fallback)
+      const homeOdds = match.odds?.home_pm_odds_1x2 ?? match.odds?.home_live_odds_1x2;
+      const awayOdds = match.odds?.away_pm_odds_1x2 ?? match.odds?.away_live_odds_1x2;
 
-      // Si pas de cotes disponibles, fallback sur le score actuel
-      if (!homeOdds || !awayOdds) {
-        return match.homeScore >= match.awayScore ? homeValue! : awayValue!;
-      }
+      // Si pas de cotes disponibles, impossible de déterminer le favori
+      if (!homeOdds || !awayOdds) return null;
 
       // Favorite = cote la plus basse
       return homeOdds <= awayOdds ? homeValue! : awayValue!;
@@ -420,13 +418,11 @@ function applyTeamScope(
       // Équipe underdog = celle avec la cote la plus HAUTE
       if (!bothAvailable) return null;
 
-      const homeOddsUnderdog = match.odds?.home_win ?? match.odds?.pm_odds_1x2_home ?? match.odds?.live_odds_1x2_home;
-      const awayOddsUnderdog = match.odds?.away_win ?? match.odds?.pm_odds_1x2_away ?? match.odds?.live_odds_1x2_away;
+      const homeOddsUnderdog = match.odds?.home_pm_odds_1x2 ?? match.odds?.home_live_odds_1x2;
+      const awayOddsUnderdog = match.odds?.away_pm_odds_1x2 ?? match.odds?.away_live_odds_1x2;
 
-      // Si pas de cotes, fallback sur le score
-      if (!homeOddsUnderdog || !awayOddsUnderdog) {
-        return match.homeScore < match.awayScore ? homeValue! : awayValue!;
-      }
+      // Si pas de cotes disponibles, impossible de déterminer l'underdog
+      if (!homeOddsUnderdog || !awayOddsUnderdog) return null;
 
       // Underdog = cote la plus haute
       return homeOddsUnderdog > awayOddsUnderdog ? homeValue! : awayValue!;
@@ -436,13 +432,10 @@ function applyTeamScope(
       // Si home est favorite (cote <= away), retourne homeValue, sinon 0
       if (homeValue === null) return null;
 
-      const homeOddsFavHome = match.odds?.home_win ?? match.odds?.pm_odds_1x2_home ?? match.odds?.live_odds_1x2_home;
-      const awayOddsFavHome = match.odds?.away_win ?? match.odds?.pm_odds_1x2_away ?? match.odds?.live_odds_1x2_away;
+      const homeOddsFavHome = match.odds?.home_pm_odds_1x2 ?? match.odds?.home_live_odds_1x2;
+      const awayOddsFavHome = match.odds?.away_pm_odds_1x2 ?? match.odds?.away_live_odds_1x2;
 
-      // Si pas de cotes, fallback sur le score
-      if (!homeOddsFavHome || !awayOddsFavHome) {
-        return match.homeScore >= match.awayScore ? homeValue : 0;
-      }
+      if (!homeOddsFavHome || !awayOddsFavHome) return null;
 
       return homeOddsFavHome <= awayOddsFavHome ? homeValue : 0;
 
@@ -451,13 +444,10 @@ function applyTeamScope(
       // Si away est favorite (cote < home), retourne awayValue, sinon 0
       if (awayValue === null) return null;
 
-      const homeOddsFavAway = match.odds?.home_win ?? match.odds?.pm_odds_1x2_home ?? match.odds?.live_odds_1x2_home;
-      const awayOddsFavAway = match.odds?.away_win ?? match.odds?.pm_odds_1x2_away ?? match.odds?.live_odds_1x2_away;
+      const homeOddsFavAway = match.odds?.home_pm_odds_1x2 ?? match.odds?.home_live_odds_1x2;
+      const awayOddsFavAway = match.odds?.away_pm_odds_1x2 ?? match.odds?.away_live_odds_1x2;
 
-      // Si pas de cotes, fallback sur le score
-      if (!homeOddsFavAway || !awayOddsFavAway) {
-        return match.awayScore > match.homeScore ? awayValue : 0;
-      }
+      if (!homeOddsFavAway || !awayOddsFavAway) return null;
 
       return awayOddsFavAway < homeOddsFavAway ? awayValue : 0;
 
@@ -466,13 +456,10 @@ function applyTeamScope(
       // Si home est underdog (cote > away), retourne homeValue, sinon 0
       if (homeValue === null) return null;
 
-      const homeOddsUnderdogHome = match.odds?.home_win ?? match.odds?.pm_odds_1x2_home ?? match.odds?.live_odds_1x2_home;
-      const awayOddsUnderdogHome = match.odds?.away_win ?? match.odds?.pm_odds_1x2_away ?? match.odds?.live_odds_1x2_away;
+      const homeOddsUnderdogHome = match.odds?.home_pm_odds_1x2 ?? match.odds?.home_live_odds_1x2;
+      const awayOddsUnderdogHome = match.odds?.away_pm_odds_1x2 ?? match.odds?.away_live_odds_1x2;
 
-      // Si pas de cotes, fallback sur le score
-      if (!homeOddsUnderdogHome || !awayOddsUnderdogHome) {
-        return match.homeScore < match.awayScore ? homeValue : 0;
-      }
+      if (!homeOddsUnderdogHome || !awayOddsUnderdogHome) return null;
 
       return homeOddsUnderdogHome > awayOddsUnderdogHome ? homeValue : 0;
 
@@ -481,13 +468,10 @@ function applyTeamScope(
       // Si away est underdog (cote > home), retourne awayValue, sinon 0
       if (awayValue === null) return null;
 
-      const homeOddsUnderdogAway = match.odds?.home_win ?? match.odds?.pm_odds_1x2_home ?? match.odds?.live_odds_1x2_home;
-      const awayOddsUnderdogAway = match.odds?.away_win ?? match.odds?.pm_odds_1x2_away ?? match.odds?.live_odds_1x2_away;
+      const homeOddsUnderdogAway = match.odds?.home_pm_odds_1x2 ?? match.odds?.home_live_odds_1x2;
+      const awayOddsUnderdogAway = match.odds?.away_pm_odds_1x2 ?? match.odds?.away_live_odds_1x2;
 
-      // Si pas de cotes, fallback sur le score
-      if (!homeOddsUnderdogAway || !awayOddsUnderdogAway) {
-        return match.awayScore < match.homeScore ? awayValue : 0;
-      }
+      if (!homeOddsUnderdogAway || !awayOddsUnderdogAway) return null;
 
       return awayOddsUnderdogAway > homeOddsUnderdogAway ? awayValue : 0;
 

@@ -19,7 +19,15 @@ import LeagueSelector from '@/components/LeagueSelector';
 
 // ─── Actions dropdown ────────────────────────────────────────────────────────
 
-function ActionsMenu({ onDelete, onRename }: { onDelete: () => void; onRename: () => void }) {
+function ActionsMenu({
+  onDelete,
+  onRename,
+  onEdit,
+}: {
+  onDelete: () => void;
+  onRename: () => void;
+  onEdit: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,7 +45,7 @@ function ActionsMenu({ onDelete, onRename }: { onDelete: () => void; onRename: (
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-6 z-20 w-36 bg-[#1e293b] border border-[#334155] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-0.5">
+          <div className="absolute right-0 top-6 z-20 w-40 bg-[#1e293b] border border-[#334155] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-0.5">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -47,6 +55,16 @@ function ActionsMenu({ onDelete, onRename }: { onDelete: () => void; onRename: (
               className="w-full text-left px-3 py-1.5 text-xs text-[#94a3b8] hover:bg-[#334155] transition-colors"
             >
               Rename
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-1.5 text-xs text-[#94a3b8] hover:bg-[#334155] transition-colors"
+            >
+              Edit goal
             </button>
             <button
               onClick={(e) => {
@@ -274,7 +292,11 @@ function StrategyCard({
             {strategy.hit_rate ? `${parseFloat(strategy.hit_rate).toFixed(0)}%` : '—'}
           </span>
           <Toggle on={strategy.is_active} onToggle={onToggle} />
-          <ActionsMenu onDelete={onDelete} onRename={() => setIsEditingName(true)} />
+          <ActionsMenu
+            onDelete={onDelete}
+            onRename={() => setIsEditingName(true)}
+            onEdit={() => router.push(`/strategies/${strategy.id}/edit`)}
+          />
         </div>
       </div>
 
@@ -322,12 +344,18 @@ function StrategyCard({
               </div>
             ))}
 
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-4 flex-wrap">
             <button
               onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
               className="bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
             >
               + Rule
+            </button>
+            <button
+              onClick={() => router.push(`/strategies/${strategy.id}/history`)}
+              className="bg-[#1e293b] border border-[#334155] text-[#94a3b8] hover:text-[#f1f5f9] hover:border-[#475569] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              History
             </button>
             <button
               onClick={() => setShowLeagueSelector(true)}
@@ -504,7 +532,11 @@ function StrategyRow({
           <Toggle on={strategy.is_active} onToggle={onToggle} />
         </td>
         <td className="py-3" onClick={(e) => e.stopPropagation()}>
-          <ActionsMenu onDelete={onDelete} onRename={() => setIsEditingName(true)} />
+          <ActionsMenu
+            onDelete={onDelete}
+            onRename={() => setIsEditingName(true)}
+            onEdit={() => router.push(`/strategies/${strategy.id}/edit`)}
+          />
         </td>
       </tr>
 
@@ -576,12 +608,18 @@ function StrategyRow({
                   </div>
                 ))}
 
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-2 mt-4 flex-wrap">
                 <button
                   onClick={() => router.push(`/strategies/${strategy.id}/rules/add`)}
                   className="bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                 >
                   + Add rule
+                </button>
+                <button
+                  onClick={() => router.push(`/strategies/${strategy.id}/history`)}
+                  className="bg-[#1e293b] border border-[#334155] text-[#94a3b8] hover:text-[#f1f5f9] hover:border-[#475569] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  History
                 </button>
                 <button
                   onClick={() => setShowLeagueSelector(true)}
