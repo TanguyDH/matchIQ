@@ -16,7 +16,7 @@ export class TelegramService {
   async getLinkUrl(userId: string): Promise<{ url: string }> {
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + LINK_TOKEN_TTL_MINUTES * 60 * 1000).toISOString();
-    const botUsername = process.env.TELEGRAM_BOT_USERNAME ?? 'MatchIQBot';
+    const botUsername = process.env.TELEGRAM_BOT_USERNAME ?? 'MatchIQApp_bot';
 
     // Check if a row already exists for this user
     const { data: existing } = await this.supabase.client
