@@ -6,6 +6,16 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/supabase';
 import { useAuth } from '@/context/AuthContext';
 
+function friendlyError(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes('already registered') || m.includes('already been registered')) return 'An account already exists with this email.';
+  if (m.includes('password') && m.includes('6')) return 'Password must be at least 6 characters.';
+  if (m.includes('invalid format') || m.includes('unable to validate email')) return 'Invalid email address.';
+  if (m.includes('rate limit') || m.includes('too many')) return 'Too many attempts, please try again later.';
+  if (m.includes('disabled')) return 'Registrations are currently disabled.';
+  return msg;
+}
+
 export default function SignUpPage() {
   const { session, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -13,6 +23,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (session) router.push('/strategies');
@@ -26,7 +37,11 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       const { error: authError } = await supabase.auth.signUp({ email, password });
-      if (authError) setError(authError.message);
+      if (authError) {
+        setError(friendlyError(authError.message));
+      } else {
+        setSuccess(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -34,7 +49,6 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center px-4">
-      {/* Subtle grid */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 opacity-[0.025]"
@@ -53,58 +67,77 @@ export default function SignUpPage() {
           </p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-[#1e293b] border border-[#334155] rounded-xl p-6 space-y-4 shadow-[0_24px_48px_rgba(0,0,0,0.5)]"
-        >
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest mb-1.5"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
-            />
+        {success ? (
+          <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-6 shadow-[0_24px_48px_rgba(0,0,0,0.5)] text-center space-y-3">
+            <div className="text-2xl">📬</div>
+            <p className="text-sm font-semibold text-[#f1f5f9]">Check your inbox</p>
+            <p className="text-xs text-[#475569] font-mono leading-relaxed">
+              A confirmation email has been sent to <span className="text-[#94a3b8]">{email}</span>.
+              Click the link in that email to activate your account.
+            </p>
+            <p className="text-[10px] text-[#334155] font-mono pt-2">
+              Don&apos;t see it? Check your spam folder.
+            </p>
           </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest mb-1.5"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
-            />
-          </div>
-
-          {error && <p className="text-[#f87171] text-xs font-mono">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#10b981] hover:bg-[#34d399] disabled:opacity-40 disabled:cursor-not-allowed text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_24px_rgba(16,185,129,0.35)]"
+        ) : (
+          <form
+            onSubmit={handleSubmit}
+            className="bg-[#1e293b] border border-[#334155] rounded-xl p-6 space-y-4 shadow-[0_24px_48px_rgba(0,0,0,0.5)]"
           >
-            {loading ? 'Creating…' : 'Create account'}
-          </button>
-        </form>
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest mb-1.5"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-[10px] font-mono font-medium text-[#475569] uppercase tracking-widest mb-1.5"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#10b981] transition-colors"
+              />
+              <p className="text-[10px] text-[#334155] font-mono mt-1">Minimum 6 characters</p>
+            </div>
+
+            {error && (
+              <div className="bg-[rgba(248,113,113,0.08)] border border-[rgba(248,113,113,0.2)] rounded-lg px-3 py-2">
+                <p className="text-[#f87171] text-xs font-mono">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#10b981] hover:bg-[#34d399] disabled:opacity-40 disabled:cursor-not-allowed text-[#0f172a] text-sm font-semibold py-2.5 rounded-lg transition-all hover:shadow-[0_0_24px_rgba(16,185,129,0.35)]"
+            >
+              {loading ? 'Creating…' : 'Create account'}
+            </button>
+          </form>
+        )}
 
         <p className="text-center text-xs text-[#475569] mt-5">
           Already have an account?{' '}

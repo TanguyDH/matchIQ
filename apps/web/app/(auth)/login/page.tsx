@@ -6,6 +6,16 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/supabase';
 import { useAuth } from '@/context/AuthContext';
 
+function friendlyError(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes('invalid login credentials') || m.includes('invalid credentials')) return 'Incorrect email or password.';
+  if (m.includes('email not confirmed')) return 'Please confirm your email first — check your inbox.';
+  if (m.includes('too many requests') || m.includes('rate limit')) return 'Too many attempts, please wait a moment.';
+  if (m.includes('user not found')) return 'No account found with this email.';
+  if (m.includes('disabled')) return 'This account has been disabled.';
+  return msg;
+}
+
 export default function LoginPage() {
   const { session, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -26,7 +36,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-      if (authError) setError(authError.message);
+      if (authError) setError(friendlyError(authError.message));
     } finally {
       setLoading(false);
     }
@@ -34,7 +44,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center px-4">
-      {/* Subtle grid */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 opacity-[0.025]"
@@ -95,7 +104,25 @@ export default function LoginPage() {
             />
           </div>
 
-          {error && <p className="text-[#f87171] text-xs font-mono">{error}</p>}
+          {error && (
+            <div className="bg-[rgba(248,113,113,0.08)] border border-[rgba(248,113,113,0.2)] rounded-lg px-3 py-2">
+              <p className="text-[#f87171] text-xs font-mono">{error}</p>
+              {error.includes('confirm your email') && (
+                <p className="text-[10px] text-[#475569] font-mono mt-1">
+                  Didn&apos;t receive it?{' '}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await supabase.auth.resend({ type: 'signup', email });
+                    }}
+                    className="text-[#10b981] hover:underline"
+                  >
+                    Resend confirmation email
+                  </button>
+                </p>
+              )}
+            </div>
+          )}
 
           <button
             type="submit"
