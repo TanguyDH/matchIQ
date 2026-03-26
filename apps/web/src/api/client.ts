@@ -2,6 +2,7 @@ import {
   Strategy,
   Rule,
   Trigger,
+  GalleryStrategy,
   CreateStrategyPayload,
   PatchStrategyPayload,
   CreateRulePayload,
@@ -39,6 +40,12 @@ export const api = {
 
   getRules: (token: string | null, strategyId: string) =>
     request<Rule[]>(`/strategies/${strategyId}/rules`, token),
+
+  getGallery: (token: string | null) =>
+    request<GalleryStrategy[]>('/strategies/gallery', token),
+
+  importFromGallery: (token: string | null, galleryStrategyId: string) =>
+    request<Strategy>(`/strategies/gallery/${galleryStrategyId}/import`, token, { method: 'POST' }),
 
   getTriggers: (token: string | null, strategyId: string, page = 1, pageSize = 20) =>
     request<{ data: Trigger[]; total: number; page: number; pageSize: number }>(

@@ -129,6 +129,16 @@ export interface StrategyWithRules extends Strategy {
   rules: Rule[];
 }
 
+export interface GalleryStrategy {
+  id: string;
+  name: string;
+  description: string | null;
+  alert_type: AlertType;
+  desired_outcome: string | null;
+  league_ids: number[] | null;
+  rules: Rule[];
+}
+
 export interface MatchSnapshot {
   id: string;
   homeTeam: string;

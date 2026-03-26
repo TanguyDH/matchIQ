@@ -17,6 +17,16 @@ export class StrategiesController {
     return this.service.findAll(userId);
   }
 
+  @Get('gallery')
+  findGallery() {
+    return this.service.findGallery();
+  }
+
+  @Post('gallery/:id/import')
+  importFromGallery(@UserId() userId: string, @Param('id') id: string) {
+    return this.service.importFromGallery(userId, id);
+  }
+
   @Get(':id')
   findOne(@UserId() userId: string, @Param('id') id: string) {
     return this.service.findOne(userId, id);

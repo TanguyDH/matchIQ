@@ -45,6 +45,7 @@ export interface Database {
           alert_type: AlertType;
           desired_outcome: string | null;
           is_active: boolean;
+          is_public: boolean;
           created_at: string;
           league_ids: number[] | null;
         };
@@ -56,6 +57,7 @@ export interface Database {
           alert_type: AlertType;
           desired_outcome?: string | null;
           is_active?: boolean;
+          is_public?: boolean;
           league_ids?: number[] | null;
         };
         Update: {
@@ -65,6 +67,7 @@ export interface Database {
           alert_type?: AlertType;
           desired_outcome?: string | null;
           is_active?: boolean;
+          is_public?: boolean;
           league_ids?: number[] | null;
         };
         Relationships: [];
@@ -80,6 +83,8 @@ export interface Database {
           value: number;
           team_scope: TeamScope | null;
           time_filter: Record<string, unknown> | null;
+          lhs_json: Record<string, unknown> | null;
+          rhs_json: Record<string, unknown> | null;
           created_at: string;
         };
         Insert: {
@@ -90,6 +95,8 @@ export interface Database {
           value: number;
           team_scope?: TeamScope | null;
           time_filter?: Record<string, unknown> | null;
+          lhs_json?: Record<string, unknown> | null;
+          rhs_json?: Record<string, unknown> | null;
         };
         Update: {
           value_type?: RuleValueType;
@@ -98,6 +105,8 @@ export interface Database {
           value?: number;
           team_scope?: TeamScope | null;
           time_filter?: Record<string, unknown> | null;
+          lhs_json?: Record<string, unknown> | null;
+          rhs_json?: Record<string, unknown> | null;
         };
         Relationships: [];
       };

@@ -6,6 +6,7 @@ import { CreateStrategyDto } from './dto/create-strategy.dto';
 import { PatchStrategyDto } from './dto/patch-strategy.dto';
 
 type StrategyRow = Database['public']['Tables']['strategies']['Row'];
+type RuleRow = Database['public']['Tables']['rules']['Row'];
 
 @Injectable()
 export class StrategiesService {
@@ -96,6 +97,102 @@ export class StrategiesService {
     }
 
     return { data: data ?? [], total: count ?? 0, page, pageSize };
+  }
+
+  // ── gallery ─────────────────────────────────────────────────────────────────
+
+  async findGallery() {
+    const { data: strategies, error: sErr } = await this.supabase.client
+      .from('strategies')
+      .select('*')
+      .eq('is_public', true)
+      .order('created_at', { ascending: false });
+
+    if (sErr) {
+      this.logger.error(sErr.message);
+      throw new InternalServerErrorException();
+    }
+
+    const rows = (strategies ?? []) as StrategyRow[];
+    if (rows.length === 0) return [];
+
+    const { data: rules } = await this.supabase.client
+      .from('rules')
+      .select('*')
+      .in('strategy_id', rows.map((s) => s.id))
+      .order('created_at', { ascending: true });
+
+    const rulesMap = new Map<string, RuleRow[]>();
+    for (const rule of (rules ?? []) as RuleRow[]) {
+      if (!rulesMap.has(rule.strategy_id)) rulesMap.set(rule.strategy_id, []);
+      rulesMap.get(rule.strategy_id)!.push(rule);
+    }
+
+    return rows.map((s) => ({ ...s, rules: rulesMap.get(s.id) ?? [] }));
+  }
+
+  async importFromGallery(userId: string, galleryStrategyId: string) {
+    const { data: sourceRaw, error: sErr } = await this.supabase.client
+      .from('strategies')
+      .select('*')
+      .eq('id', galleryStrategyId)
+      .eq('is_public', true)
+      .single();
+
+    if (sErr || !sourceRaw) throw new NotFoundException(`Gallery strategy ${galleryStrategyId} not found`);
+    const source = sourceRaw as StrategyRow;
+
+    const { data: rulesRaw } = await this.supabase.client
+      .from('rules')
+      .select('*')
+      .eq('strategy_id', galleryStrategyId)
+      .order('created_at', { ascending: true });
+    const rules = (rulesRaw ?? []) as RuleRow[];
+
+    const { data: newStrategyRaw, error: createErr } = await this.supabase.client
+      .from('strategies')
+      .insert({
+        user_id: userId,
+        name: source.name,
+        description: source.description,
+        mode: source.mode,
+        alert_type: source.alert_type,
+        desired_outcome: source.desired_outcome,
+        is_active: true,
+        league_ids: source.league_ids,
+      })
+      .select()
+      .single();
+
+    if (createErr || !newStrategyRaw) {
+      this.logger.error(createErr?.message);
+      throw new InternalServerErrorException();
+    }
+    const newStrategy = newStrategyRaw as StrategyRow;
+
+    if (rules.length > 0) {
+      const { error: rulesErr } = await this.supabase.client.from('rules').insert(
+        rules.map((r) => ({
+          strategy_id: newStrategy.id,
+          value_type: r.value_type,
+          metric: r.metric,
+          comparator: r.comparator,
+          value: r.value,
+          team_scope: r.team_scope,
+          time_filter: r.time_filter,
+          lhs_json: r.lhs_json,
+          rhs_json: r.rhs_json,
+        })),
+      );
+
+      if (rulesErr) {
+        this.logger.error(rulesErr.message);
+        await this.supabase.client.from('strategies').delete().eq('id', newStrategy.id);
+        throw new InternalServerErrorException();
+      }
+    }
+
+    return newStrategy;
   }
 
   async delete(userId: string, id: string) {
