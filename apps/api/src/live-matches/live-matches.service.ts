@@ -45,10 +45,13 @@ function calculateMatchMinute(periods: Period[]): number {
   return minute;
 }
 
+const CACHE_TTL_MS = 15_000;
+
 @Injectable()
 export class LiveMatchesService {
   private readonly apiKey: string;
   private readonly baseUrl: string;
+  private cache: { data: LiveMatch[]; expiresAt: number } | null = null;
 
   constructor() {
     this.apiKey = process.env.SPORTMONKS_API_KEY || '';
@@ -56,6 +59,10 @@ export class LiveMatchesService {
   }
 
   async getLiveMatches(): Promise<LiveMatch[]> {
+    if (this.cache && Date.now() < this.cache.expiresAt) {
+      return this.cache.data;
+    }
+
     try {
       const response = await fetch(
         `${this.baseUrl}/livescores/inplay?api_token=${this.apiKey}&include=state;periods;scores;participants;league`
@@ -119,6 +126,7 @@ export class LiveMatchesService {
         };
       });
 
+      this.cache = { data: liveMatches, expiresAt: Date.now() + CACHE_TTL_MS };
       return liveMatches;
     } catch (error) {
       console.error('[LiveMatchesService] Error fetching live matches:', error);

@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+
+const REFRESH_INTERVAL = 15; // seconds
 
 interface LiveMatch {
   id: number;
@@ -17,13 +19,9 @@ export default function LiveMatchesPage() {
   const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchLiveMatches();
-  }, []);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchLiveMatches = async () => {
-    setLoading(true);
     setError(null);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -37,6 +35,17 @@ export default function LiveMatchesPage() {
       setLoading(false);
     }
   };
+
+  // Auto-refresh every 15s + countdown ticker
+  useEffect(() => {
+    fetchLiveMatches();
+
+    intervalRef.current = setInterval(fetchLiveMatches, REFRESH_INTERVAL * 1000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   return (
     <>
@@ -53,12 +62,6 @@ export default function LiveMatchesPage() {
             </p>
           )}
         </div>
-        <button
-          onClick={fetchLiveMatches}
-          className="bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] text-xs font-semibold px-4 py-2 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.35)]"
-        >
-          ↺ Actualiser
-        </button>
       </div>
 
       {/* Loading */}
