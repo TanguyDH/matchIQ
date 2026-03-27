@@ -9,6 +9,7 @@ export interface LiveMatch {
   minute: number;
   status: string;
   league: string;
+  leagueId: number | null;
 }
 
 interface Period {
@@ -123,6 +124,7 @@ export class LiveMatchesService {
           minute,
           status: stateName,
           league: fixture.league?.name || 'Unknown League',
+          leagueId: fixture.league?.id ?? null,
         };
       });
 

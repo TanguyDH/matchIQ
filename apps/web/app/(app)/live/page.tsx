@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/api/client';
+import LeagueSelector from '@/components/LeagueSelector';
 
 const REFRESH_INTERVAL = 15; // seconds
 
@@ -13,12 +16,18 @@ interface LiveMatch {
   minute: number;
   status: string;
   league: string;
+  leagueId: number | null;
 }
 
 export default function LiveMatchesPage() {
+  const { session } = useAuth();
+  const token = session?.access_token ?? null;
+
   const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [defaultLeagueIds, setDefaultLeagueIds] = useState<number[]>([]);
+  const [showLeagueSelector, setShowLeagueSelector] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchLiveMatches = async () => {
@@ -36,32 +45,67 @@ export default function LiveMatchesPage() {
     }
   };
 
-  // Auto-refresh every 15s + countdown ticker
   useEffect(() => {
     fetchLiveMatches();
-
     intervalRef.current = setInterval(fetchLiveMatches, REFRESH_INTERVAL * 1000);
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
+  // Load default league filter
+  useEffect(() => {
+    if (!token) return;
+    api.getUserSettings(token).then((s) => {
+      setDefaultLeagueIds(s.default_league_ids ?? []);
+    });
+  }, [token]);
+
+  const handleLeagueSave = async (ids: number[]) => {
+    setDefaultLeagueIds(ids);
+    setShowLeagueSelector(false);
+    await api.updateUserSettings(token, ids.length > 0 ? ids : null);
+  };
+
+  // Apply filter
+  const filteredMatches =
+    defaultLeagueIds.length === 0
+      ? matches
+      : matches.filter((m) => m.leagueId !== null && defaultLeagueIds.includes(m.leagueId));
+
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-4xl text-[#f1f5f9] tracking-wide leading-none">
             MATCHS EN LIVE
           </h1>
           {!loading && matches.length > 0 && (
             <p className="text-xs text-[#475569] font-mono mt-1">
-              <span className="text-[#10b981]">{matches.length}</span> match
-              {matches.length > 1 ? 's' : ''} en cours
+              <span className="text-[#10b981]">{filteredMatches.length}</span>
+              {defaultLeagueIds.length > 0 && matches.length !== filteredMatches.length && (
+                <span className="text-[#334155]"> / {matches.length}</span>
+              )}
+              {' '}match{filteredMatches.length > 1 ? 's' : ''} en cours
             </p>
           )}
         </div>
+
+        {/* League filter button */}
+        <button
+          onClick={() => setShowLeagueSelector(true)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+            defaultLeagueIds.length > 0
+              ? 'border-[#10b981]/40 bg-[rgba(16,185,129,0.06)] text-[#10b981]'
+              : 'border-[#334155] text-[#475569] hover:border-[#475569] hover:text-[#94a3b8]'
+          }`}
+        >
+          🏆{' '}
+          {defaultLeagueIds.length === 0
+            ? 'Toutes les ligues'
+            : `${defaultLeagueIds.length} ligue${defaultLeagueIds.length > 1 ? 's' : ''}`}
+        </button>
       </div>
 
       {/* Loading */}
@@ -82,18 +126,32 @@ export default function LiveMatchesPage() {
       )}
 
       {/* Empty state */}
-      {!loading && !error && matches.length === 0 && (
+      {!loading && !error && filteredMatches.length === 0 && (
         <div className="flex flex-col items-center justify-center h-48 border border-dashed border-[#334155] rounded-xl">
           <span className="text-2xl mb-3 opacity-30">⬡</span>
-          <p className="text-sm text-[#475569]">Aucun match en live pour le moment</p>
-          <p className="text-xs text-[#334155] mt-1 font-mono">Revenez pendant les matchs</p>
+          {defaultLeagueIds.length > 0 && matches.length > 0 ? (
+            <>
+              <p className="text-sm text-[#475569]">Aucun match en live dans vos ligues</p>
+              <button
+                onClick={() => handleLeagueSave([])}
+                className="text-xs text-[#10b981] mt-2 hover:underline"
+              >
+                Voir tous les matchs
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-[#475569]">Aucun match en live pour le moment</p>
+              <p className="text-xs text-[#334155] mt-1 font-mono">Revenez pendant les matchs</p>
+            </>
+          )}
         </div>
       )}
 
       {/* Matches list */}
-      {!loading && !error && matches.length > 0 && (
+      {!loading && !error && filteredMatches.length > 0 && (
         <div className="space-y-3">
-          {matches.map((match) => (
+          {filteredMatches.map((match) => (
             <div
               key={match.id}
               className="bg-[#1e293b] border border-[#334155] rounded-xl p-4 hover:border-[#10b981]/20 transition-all group"
@@ -130,6 +188,16 @@ export default function LiveMatchesPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* League selector modal */}
+      {showLeagueSelector && (
+        <LeagueSelector
+          token={token}
+          selectedIds={defaultLeagueIds}
+          onSave={handleLeagueSave}
+          onClose={() => setShowLeagueSelector(false)}
+        />
       )}
     </>
   );
