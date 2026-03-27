@@ -303,7 +303,14 @@ function StrategyCard({
                 className="text-sm font-semibold bg-[#0f172a] text-[#f1f5f9] border border-[#10b981] rounded px-2 py-0.5 focus:outline-none w-full"
               />
             ) : (
-              <p className="text-sm font-semibold text-[#f1f5f9] truncate">{strategy.name}</p>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="text-sm font-semibold text-[#f1f5f9] truncate">{strategy.name}</p>
+                {strategy.is_public && (
+                  <span className="shrink-0 text-[9px] font-mono text-[#475569] border border-[#334155] rounded px-1 py-px leading-none">
+                    public
+                  </span>
+                )}
+              </div>
             )}
             {strategy.desired_outcome && (
               <p className="text-[11px] text-[#475569] mt-0.5 truncate">
@@ -540,9 +547,16 @@ function StrategyRow({
                   className="text-sm font-semibold bg-[#0f172a] text-[#f1f5f9] border border-[#10b981] rounded px-2 py-0.5 focus:outline-none"
                 />
               ) : (
-                <p className="text-sm font-semibold text-[#f1f5f9] group-hover:text-[#10b981] transition-colors">
-                  {strategy.name}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-semibold text-[#f1f5f9] group-hover:text-[#10b981] transition-colors">
+                    {strategy.name}
+                  </p>
+                  {strategy.is_public && (
+                    <span className="shrink-0 text-[9px] font-mono text-[#475569] border border-[#334155] rounded px-1 py-px leading-none">
+                      public
+                    </span>
+                  )}
+                </div>
               )}
               {strategy.desired_outcome && (
                 <p className="text-[11px] text-[#475569]">{strategy.desired_outcome}</p>

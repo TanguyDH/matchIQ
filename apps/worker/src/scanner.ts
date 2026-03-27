@@ -28,6 +28,9 @@ import { config } from './config';
 
 const providerService = new ProviderService();
 
+// Pre-match odds don't change once a match starts — cache per fixture for the worker session.
+const prematchOddsCache = new Map<string, Record<string, number>>();
+
 /**
  * Main scanning logic.
  * Analyzes data requirements, fetches live fixtures, and processes candidates.
@@ -87,6 +90,19 @@ export async function scanMatches(): Promise<void> {
         console.log(`[Scanner] home_goals:`, match.inPlay.home_goals);
         console.log(`[Scanner] attacks (home/away):`, match.inPlay.home_attacks, '/', match.inPlay.away_attacks);
         console.log(`[Scanner] dangerous_attacks (home/away):`, match.inPlay.home_dangerous_attacks, '/', match.inPlay.away_dangerous_attacks);
+
+        // Fetch and merge pre-match odds if strategies need ODDS rules
+        if (requirements.needsOdds) {
+          if (!prematchOddsCache.has(match.id)) {
+            const pmOdds = await providerService.fetchPreMatchOddsData(fixture.id);
+            if (Object.keys(pmOdds).length > 0) {
+              prematchOddsCache.set(match.id, pmOdds);
+              console.log(`[Scanner] Pre-match odds cached for fixture ${fixture.id}: ${Object.keys(pmOdds).length} keys`);
+            }
+          }
+          const cachedOdds = prematchOddsCache.get(match.id);
+          if (cachedOdds) Object.assign(match.odds, cachedOdds);
+        }
 
         // Persist all live stats to timeline (one row per match per minute)
         await upsertMatchStats(match);

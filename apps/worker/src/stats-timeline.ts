@@ -39,6 +39,7 @@ const STAT_KEYS = [
   'crosses_accurate',
   'assists',
   'ball_safe',
+  'momentum',
 ] as const;
 
 type StatKey = (typeof STAT_KEYS)[number];

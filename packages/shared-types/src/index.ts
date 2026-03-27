@@ -33,6 +33,7 @@ export interface Strategy {
   alert_type: AlertType;
   desired_outcome: string | null;
   is_active: boolean;
+  is_public?: boolean;
   created_at: string;
   total_triggers?: number;
   hit_rate?: string;

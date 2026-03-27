@@ -320,12 +320,13 @@ export class ProviderService {
         // Note: participants.latest.statistics for corners & shots data (types 34, 42, 86)
         // standings must be fetched separately via season endpoint
         const response = await fetch(
-          `${this.baseUrl}/livescores/inplay?api_token=${this.apiKey}&include=state;periods;scores;participants;statistics.type;league;events;participants.latest.scores;participants.latest.statistics;odds;inplayOdds`,
+          `${this.baseUrl}/livescores/inplay?api_token=${this.apiKey}&include=state;periods;scores;participants;statistics.type;league;events;participants.latest.scores;participants.latest.statistics`,
         );
 
         if (!response.ok) {
+          const body = await response.text().catch(() => '');
           throw new Error(
-            `SportMonks fixtures request failed: ${response.status} ${response.statusText}`,
+            `SportMonks fixtures request failed: ${response.status} ${response.statusText} — ${body}`,
           );
         }
 
@@ -484,6 +485,102 @@ export class ProviderService {
         console.error('[ProviderService] Stats validation error:', error.errors);
       }
       throw error;
+    }
+  }
+
+  /**
+   * Fetches and parses pre-match odds for a specific fixture.
+   * Returns a flat oddsData map (same keys as match.odds).
+   * Pre-match odds don't change once a match starts — cache the result in the scanner.
+   */
+  async fetchPreMatchOddsData(fixtureId: number): Promise<Record<string, number>> {
+    try {
+      let pmOddsArray: any[] = [];
+
+      if (config.useMockData) {
+        return {};
+      }
+
+      const response = await fetch(
+        `${this.baseUrl}/fixtures/${fixtureId}?api_token=${this.apiKey}&include=odds`,
+      );
+      if (!response.ok) {
+        console.warn(`[ProviderService] Pre-match odds fetch failed for fixture ${fixtureId}: ${response.status}`);
+        return {};
+      }
+      const json = await response.json();
+      pmOddsArray = json?.data?.odds ?? [];
+
+      const oddsData: Record<string, number> = {};
+
+      const getOldest = (odds: any[], label: string, marketId: number) => {
+        const filtered = odds.filter((o) => o?.market_id === marketId && o?.label === label);
+        if (filtered.length === 0) return null;
+        return filtered.sort((a: any, b: any) =>
+          (a?.created_at ? new Date(a.created_at).getTime() : 0) -
+          (b?.created_at ? new Date(b.created_at).getTime() : 0)
+        )[0];
+      };
+
+      const oldestByLabel = (odds: any[], label: string) => {
+        const filtered = odds.filter((o) => o?.label === label);
+        if (filtered.length === 0) return null;
+        return filtered.sort((a: any, b: any) =>
+          (a?.created_at ? new Date(a.created_at).getTime() : 0) -
+          (b?.created_at ? new Date(b.created_at).getTime() : 0)
+        )[0];
+      };
+
+      const toKeySuffix = (total: string) =>
+        total.includes('.') ? total.replace('.', '_') : total + '_0';
+
+      const extractOuByLine = (marketOdds: any[], keyPrefix: string) => {
+        const lines = [...new Set(marketOdds.map((o) => o?.total).filter(Boolean))] as string[];
+        for (const line of lines) {
+          const lineOdds = marketOdds.filter((o) => o?.total === line);
+          const over = oldestByLabel(lineOdds, 'Over');
+          const under = oldestByLabel(lineOdds, 'Under');
+          const suffix = toKeySuffix(line);
+          if (over?.value) oddsData[`${keyPrefix}_over_${suffix}`] = parseFloat(over.value);
+          if (under?.value) oddsData[`${keyPrefix}_under_${suffix}`] = parseFloat(under.value);
+        }
+      };
+
+      const pmHome = getOldest(pmOddsArray, 'Home', 1);
+      const pmDraw = getOldest(pmOddsArray, 'Draw', 1);
+      const pmAway = getOldest(pmOddsArray, 'Away', 1);
+      if (pmHome?.value) oddsData.home_pm_odds_1x2 = parseFloat(pmHome.value);
+      if (pmDraw?.value) oddsData.pm_odds_1x2_draw = parseFloat(pmDraw.value);
+      if (pmAway?.value) oddsData.away_pm_odds_1x2 = parseFloat(pmAway.value);
+
+      extractOuByLine(pmOddsArray.filter((o) => o?.market_id === 80), 'pm_odds_match_goals');
+
+      const pmHtHome = getOldest(pmOddsArray, 'Home', 31);
+      const pmHtDraw = getOldest(pmOddsArray, 'Draw', 31);
+      const pmHtAway = getOldest(pmOddsArray, 'Away', 31);
+      if (pmHtHome?.value) oddsData.home_pm_odds_ht_result = parseFloat(pmHtHome.value);
+      if (pmHtDraw?.value) oddsData.pm_odds_ht_result_draw = parseFloat(pmHtDraw.value);
+      if (pmHtAway?.value) oddsData.away_pm_odds_ht_result = parseFloat(pmHtAway.value);
+
+      extractOuByLine(pmOddsArray.filter((o) => o?.market_id === 28), 'pm_odds_1h_goals');
+
+      const pmBttsYes = getOldest(pmOddsArray, 'Yes', 14);
+      const pmBttsNo  = getOldest(pmOddsArray, 'No',  14);
+      if (pmBttsYes?.value) oddsData.pm_odds_btts_yes = parseFloat(pmBttsYes.value);
+      if (pmBttsNo?.value)  oddsData.pm_odds_btts_no  = parseFloat(pmBttsNo.value);
+
+      const pmOddGoals  = getOldest(pmOddsArray, 'Odd',  44);
+      const pmEvenGoals = getOldest(pmOddsArray, 'Even', 44);
+      if (pmOddGoals?.value)  oddsData.pm_odds_odd_goals  = parseFloat(pmOddGoals.value);
+      if (pmEvenGoals?.value) oddsData.pm_odds_even_goals = parseFloat(pmEvenGoals.value);
+
+      extractOuByLine(pmOddsArray.filter((o) => o?.market_id === 67), 'pm_odds_corners');
+      extractOuByLine(pmOddsArray.filter((o) => o?.market_id === 70), 'pm_odds_corners_1h');
+
+      return oddsData;
+    } catch (err) {
+      console.warn(`[ProviderService] fetchPreMatchOddsData error for fixture ${fixtureId}:`, err);
+      return {};
     }
   }
 
