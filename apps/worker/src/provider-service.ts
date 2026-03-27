@@ -508,7 +508,7 @@ export class ProviderService {
         console.warn(`[ProviderService] Pre-match odds fetch failed for fixture ${fixtureId}: ${response.status}`);
         return {};
       }
-      const json = await response.json();
+      const json = await response.json() as Record<string, any>;
       pmOddsArray = json?.data?.odds ?? [];
 
       const oddsData: Record<string, number> = {};
