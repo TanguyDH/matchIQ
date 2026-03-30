@@ -44,6 +44,14 @@ export async function createTrigger(
       }
     }
 
+    // Always include pre-match 1x2 odds under canonical names so that
+    // outcome resolvers (FAV_WIN, UND_WIN, OVER_x_FAV_GOALS, etc.) can
+    // determine the favourite regardless of whether the strategy rules use odds.
+    if (match.odds['home_pm_odds_1x2'] !== undefined)
+      relevantOdds['prematch_home_win'] = match.odds['home_pm_odds_1x2'];
+    if (match.odds['away_pm_odds_1x2'] !== undefined)
+      relevantOdds['prematch_away_win'] = match.odds['away_pm_odds_1x2'];
+
     // Build evidence JSON with only relevant data
     const evidence: TriggerEvidence = {
       strategyId,
